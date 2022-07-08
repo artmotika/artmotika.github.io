@@ -9,39 +9,40 @@
     <script src="TemplateData/UnityProgress.js"></script>
     <script src="Build/UnityLoader.js"></script>
     <script type="text/javascript">
-    function readFile() {
-      let file = "Data/Saves/ShopSave.txt";
+    function createRequest ()
+    {
+      var request = null;
+      try
+      {
+        request = new XMLHttpRequest ();
+      }
+      catch (e)
+      {
+        try
+        {
+          request = new ActiveXObject ("Microsoft.XMLHTTP");
+        }
+        catch (e) {}
+      }
+      return request;
+    }
 
-      let reader = new FileReader();
+    function getFile (name)
+    {
 
-      reader.readAsText(file);
-
-      reader.onload = function() {
-        document.write(reader.result);
-      };
-
-      reader.onerror = function() {
-        document.write(reader.error);
-      };
+      var req = createRequest ();
+      req.open('GET', name, false);
+    //  req.overrideMimeType('text/plain; charset=windows-1251');
+      req.send(null);
+      document.getElementById ('mytext').firstChild.data = req.responseText;
 
     }
-    const func = () => {
-      document.write("Текст 1");
-    };
-    setTimeout(readFile(), 4 * 1000);
-
-    var count = 0;
-    a = setInterval (function ()
-       {
-          count++;
-          readFile();
-        }, 1000);
     </script>
     <script>
       var unityInstance = UnityLoader.instantiate("unityContainer", "Build/metaShop.json", {onProgress: UnityProgress});
     </script>
   </head>
-  <body>
+  <body onload="getFile('Data/Saves/ShopSave.txt')">
     <div class="webgl-content">
       <div id="unityContainer" style="width: 960px; height: 600px"></div>
       <div class="footer">
@@ -53,6 +54,7 @@
     <iframe src="Data/Saves/ShopSave.txt" width="468" height="60" align="left">
     Ваш браузер не поддерживает плавающие фреймы!
     </iframe>
-    <div></div>
+    <?php echo file_get_contents('Data/Saves/ShopSave.txt') ?>
+    <div id="mytext"></div>
   </body>
 </html>
