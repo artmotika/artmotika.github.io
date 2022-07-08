@@ -9,6 +9,24 @@
     <script src="TemplateData/UnityProgress.js"></script>
     <script src="Build/UnityLoader.js"></script>
     <script>
+    function readFile() {
+      let file = "Data/Saves/ShopSave.txt";
+
+      let reader = new FileReader();
+
+      reader.readAsText(file);
+
+      reader.onload = function() {
+        alert(reader.result);
+      };
+
+      reader.onerror = function() {
+        alert(reader.error);
+      };
+
+    }
+    </script>
+    <script>
       var unityInstance = UnityLoader.instantiate("unityContainer", "Build/metaShop.json", {onProgress: UnityProgress});
     </script>
   </head>
