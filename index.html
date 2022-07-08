@@ -9,24 +9,6 @@
     <script src="TemplateData/UnityProgress.js"></script>
     <script src="Build/UnityLoader.js"></script>
     <script>
-    function readFile() {
-      let file = "Data/Saves/ShopSave.txt";
-
-      let reader = new FileReader();
-
-      reader.readAsText(file);
-
-      reader.onload = function() {
-        alert(reader.result);
-      };
-
-      reader.onerror = function() {
-        alert(reader.error);
-      };
-
-    }
-    </script>
-    <script>
       var unityInstance = UnityLoader.instantiate("unityContainer", "Build/metaShop.json", {onProgress: UnityProgress});
     </script>
   </head>
@@ -39,5 +21,8 @@
         <div class="title">MetaStore</div>
       </div>
     </div>
+    <iframe src="Data/Saves/ShopSave.txt" width="468" height="60" align="left">
+    Ваш браузер не поддерживает плавающие фреймы!
+    </iframe>
   </body>
 </html>
