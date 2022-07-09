@@ -25,7 +25,8 @@
     <script>
       function GoToСart() 
       {
-        MyGameInstance.SendMessage('Main Camera', 'GetStoreInfo');
+        var shopInfo = MyGameInstance.SendMessage('Main Camera', 'GetStoreInfo');
+        window.alert(shopInfo);
       }
     </script>
   </body>
