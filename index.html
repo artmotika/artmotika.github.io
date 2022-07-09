@@ -25,8 +25,7 @@
     <script>
       function GoToСart() 
       {
-        var shopInfo = MyGameInstance.SendMessage('StorageShop', 'GetStoreInfo');
-        window.alert(shopInfo);
+        MyGameInstance.SendMessage('StorageShop', 'GetStoreInfo');
       }
     </script>
   </body>
