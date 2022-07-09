@@ -10,6 +10,12 @@
     <script src="Build/UnityLoader.js"></script>
     <script>
       var unityInstance = UnityLoader.instantiate("unityContainer", "Build/metaShop.json", {onProgress: UnityProgress});
+
+      function GoToСart() 
+      {
+        var shopInfo = unityInstance.SendMessage('Main Camera', 'GetStoreInfo');
+        window.alert(shopInfo);
+      }
     </script>
   </head>
   <body>
@@ -22,12 +28,5 @@
       </div>
     </div>
     <button onclick="GoToСart()">Перейти к корзине</button>
-    <script>
-      function GoToСart() 
-      {
-        var shopInfo = MyGameInstance.SendMessage('Main Camera', 'GetStoreInfo');
-        window.alert(shopInfo);
-      }
-    </script>
   </body>
 </html>
