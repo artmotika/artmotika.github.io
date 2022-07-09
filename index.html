@@ -21,5 +21,13 @@
         <div class="title">MetaStore</div>
       </div>
     </div>
+    <button onclick="GoToСart">Перейти к корзине</button>
+    <script>
+      function GoToСart() 
+      {
+        var shopInfo = gameInstance.SendMessage('StorageShop', 'GetStoreInfo');
+        allert(shopInfo);
+      }
+    </script>
   </body>
 </html>
