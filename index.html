@@ -8,41 +8,11 @@
     <link rel="stylesheet" href="TemplateData/style.css">
     <script src="TemplateData/UnityProgress.js"></script>
     <script src="Build/UnityLoader.js"></script>
-    <script type="text/javascript">
-    function createRequest ()
-    {
-      var request = null;
-      try
-      {
-        request = new XMLHttpRequest ();
-      }
-      catch (e)
-      {
-        try
-        {
-          request = new ActiveXObject ("Microsoft.XMLHTTP");
-        }
-        catch (e) {}
-      }
-      return request;
-    }
-
-    function getFile (name)
-    {
-
-      var req = createRequest ();
-      req.open('GET', name, false);
-    //  req.overrideMimeType('text/plain; charset=windows-1251');
-      req.send(null);
-      document.getElementById ('mytext').firstChild.data = req.responseText;
-
-    }
-    </script>
     <script>
       var unityInstance = UnityLoader.instantiate("unityContainer", "Build/metaShop.json", {onProgress: UnityProgress});
     </script>
   </head>
-  <body onload="getFile('Data/Saves/ShopSave.txt')">
+  <body>
     <div class="webgl-content">
       <div id="unityContainer" style="width: 960px; height: 600px"></div>
       <div class="footer">
@@ -51,10 +21,5 @@
         <div class="title">MetaStore</div>
       </div>
     </div>
-    <iframe src="Data/Saves/ShopSave.txt" width="468" height="60" align="left">
-    Ваш браузер не поддерживает плавающие фреймы!
-    </iframe>
-    <?php echo file_get_contents('Data/Saves/ShopSave.txt') ?>
-    <div id="mytext"></div>
   </body>
 </html>
