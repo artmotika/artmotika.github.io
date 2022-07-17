@@ -10,12 +10,6 @@
     <script src="Build/UnityLoader.js"></script>
     <script>
       var unityInstance = UnityLoader.instantiate("unityContainer", "Build/metaShop.json", {onProgress: UnityProgress});
-
-      function GoToСart() 
-      {
-        var shopInfo = unityInstance.SendMessage('Main Camera', 'GetStoreInfo');
-        window.alert(shopInfo);
-      }
     </script>
   </head>
   <body>
@@ -27,6 +21,5 @@
         <div class="title">MetaStore</div>
       </div>
     </div>
-    <button onclick="GoToСart()">Перейти к корзине</button>
   </body>
 </html>
