@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Клик Трекер</title>
+</head>
+<body>
+    <h1>Клик Трекер</h1>
+    <button id="clickButton">Кликни меня!</button>
+    <p id="lastClickInfo">Последний клик еще не зафиксирован.</p>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const button = document.getElementById("clickButton");
+            const lastClickInfo = document.getElementById("lastClickInfo");
+
+            // Функция для обновления информации о последнем клике
+            function updateLastClickInfo() {
+                const lastClick = localStorage.getItem("lastClick");
+                if (lastClick) {
+                    lastClickInfo.textContent = `Последний клик был: ${lastClick}`;
+                } else {
+                    lastClickInfo.textContent = "Последний клик еще не зафиксирован.";
+                }
+            }
+
+            // Обработчик клика по кнопке
+            button.addEventListener("click", () => {
+                const now = new Date();
+                const clickInfo = `Дата: ${now.toLocaleDateString()}, Время: ${now.toLocaleTimeString()}`;
+                localStorage.setItem("lastClick", clickInfo);
+                updateLastClickInfo();
+            });
+
+            // Обновляем информацию о последнем клике при загрузке страницы
+            updateLastClickInfo();
+        });
+    </script>
+</body>
+</html>

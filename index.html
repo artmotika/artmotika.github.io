@@ -1,41 +1,35 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Клик Трекер</title>
-</head>
-<body>
-    <h1>Клик Трекер</h1>
-    <button id="clickButton">Кликни меня!</button>
-    <p id="lastClickInfo">Последний клик еще не зафиксирован.</p>
-
+    <title>Google Login</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const button = document.getElementById("clickButton");
-            const lastClickInfo = document.getElementById("lastClickInfo");
+        function handleCredentialResponse(response) {
+            const data = jwt_decode(response.credential);
+            document.getElementById('user-info').innerText = `Hello, ${data.name}`;
+        }
 
-            // Функция для обновления информации о последнем клике
-            function updateLastClickInfo() {
-                const lastClick = localStorage.getItem("lastClick");
-                if (lastClick) {
-                    lastClickInfo.textContent = `Последний клик был: ${lastClick}`;
-                } else {
-                    lastClickInfo.textContent = "Последний клик еще не зафиксирован.";
-                }
-            }
-
-            // Обработчик клика по кнопке
-            button.addEventListener("click", () => {
-                const now = new Date();
-                const clickInfo = `Дата: ${now.toLocaleDateString()}, Время: ${now.toLocaleTimeString()}`;
-                localStorage.setItem("lastClick", clickInfo);
-                updateLastClickInfo();
+        window.onload = function () {
+            google.accounts.id.initialize({
+                client_id: 'YOUR_GOOGLE_CLIENT_ID',
+                callback: handleCredentialResponse
             });
 
-            // Обновляем информацию о последнем клике при загрузке страницы
-            updateLastClickInfo();
-        });
+            google.accounts.id.renderButton(
+                document.getElementById('buttonDiv'),
+                { theme: 'outline', size: 'large' }  // customization attributes
+            );
+
+            google.accounts.id.prompt(); // also display the One Tap dialog
+        };
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
+</head>
+<body>
+    <h1>Google Login</h1>
+    <div id="buttonDiv"></div>
+    <p id="user-info">You are not logged in.</p>
 </body>
 </html>
