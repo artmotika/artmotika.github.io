@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Login</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        function handleCredentialResponse(response) {
+            const data = jwt_decode(response.credential);
+            document.getElementById('user-info').innerText = `Hello, ${data.name}`;
+        }
+
+        window.onload = function () {
+            google.accounts.id.initialize({
+                client_id: '676869273473-gerd48fuq70ii3utuo4ogpcj410i2png.apps.googleusercontent.com',
+                callback: handleCredentialResponse
+            });
+
+            google.accounts.id.renderButton(
+                document.getElementById('buttonDiv'),
+                { theme: 'outline', size: 'large' }  // customization attributes
+            );
+
+            google.accounts.id.prompt(); // also display the One Tap dialog
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
+</head>
+<body>
+    <h1>Google Login</h1>
+    <div id="buttonDiv"></div>
+    <p id="user-info">You are not logged in.</p>
+</body>
+</html>
