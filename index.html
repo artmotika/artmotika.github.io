@@ -8,218 +8,185 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Шиномонтаж</title>
+    <title>delim</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="images/logo.png">
+    <link rel="icon" type="image/png" href="images/logo_b.png">
 
     <!-- CSS FILES -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
 
-    <link href="css/form-styles.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+
+    <link href="css/bootstrap.min.css" rel="stylesheet">
 
     <link href="css/bootstrap-icons.css" rel="stylesheet">
 
-    <link href="https://fonts.googleapis.com/css?family=Poppins:400,600&display=swap" rel="stylesheet">
+    <link href="css/templatemo-festava-live.css" rel="stylesheet">
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 
+    <!--
+
+TemplateMo 583 Festava Live
+
+https://templatemo.com/tm-583-festava-live
+
+-->
 </head>
 
 <body>
 
-    <!--PEN HEADER-->
-    <header class="header">
-        <h1 class="header__title">Шиномонтаж</h1>
-    </header>
-    <!--PEN CONTENT     -->
-    <div class="content">
-        <!--content inner-->
-        <div class="content__inner">
-        <div class="container">
-            <!--content title-->
-            <!-- <h2 class="content__title content__title--m-sm">Зарегестрировать заказ</h2> -->
-            <!--animations form-->
-            <!-- <form class="pick-animation my-4">
-            <div class="form-row">
-                <div class="col-5 m-auto">
-                <select class="pick-animation__select form-control">
-                    <option value="scaleIn" selected="selected">ScaleIn</option>
-                    <option value="scaleOut">ScaleOut</option>
-                    <option value="slideHorz">SlideHorz</option>
-                    <option value="slideVert">SlideVert</option>
-                    <option value="fadeIn">FadeIn</option>
-                </select>
+    <main>
+
+        <!-- <header class="site-header">
+            <div class="container">
+                <div class="row">
+
+                    <div class="col-lg-12 col-12 d-flex flex-wrap">
+                        <p class="d-flex me-4 mb-0">
+                            <i class="bi-person custom-icon me-2"></i>
+                            <strong class="text-dark">Welcome to Music Festival 2023</strong>
+                        </p>
+                    </div>
+
                 </div>
             </div>
-            </form> -->
-            <!--content title-->
-            <h2 class="content__title">Зарегестрировать заказ</h2>
-        </div>
-        <div class="container overflow-hidden">
-            <!--multisteps-form-->
-            <div class="multisteps-form">
-            <!--progress bar-->
-            <div class="row">
-                <div class="col-12 col-lg-8 ml-auto mr-auto mb-4">
-                <div class="multisteps-form__progress">
-                    <button class="multisteps-form__progress-btn js-active" type="button" title="Выбор типа автомобиля" disabled>Выбор типа автомобиля</button>
-                    <button class="multisteps-form__progress-btn" type="button" title="Категория шин" disabled>Категория шин</button>
-                    <button class="multisteps-form__progress-btn" type="button" title="Радиус колеса (R)" disabled>Радиус колеса (R)</button>
-                    <button class="multisteps-form__progress-btn" type="button" title="Выбор услуги" disabled>Выбор услуги</button>
-                </div>
+        </header> -->
+
+
+        <!-- <nav class="navbar navbar-expand-lg">
+            <div class="container">
+                <a class="navbar-brand" href="index.html">
+                    Festava Live
+                </a>
+
+                <a href="ticket.html" class="btn custom-btn d-lg-none ms-auto me-4">Buy Ticket</a>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav align-items-lg-center ms-auto me-lg-5">
+                        <li class="nav-item">
+                            <a class="nav-link click-scroll" href="#section_1">Home</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link click-scroll" href="#section_2">About</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link click-scroll" href="#section_3">Artists</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link click-scroll" href="#section_4">Schedule</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link click-scroll" href="#section_5">Pricing</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link click-scroll" href="#section_6">Contact</a>
+                        </li>
+                    </ul>
+
+                    <a href="ticket.html" class="btn custom-btn d-lg-block d-none">Buy Ticket</a>
                 </div>
             </div>
-            <!--form panels-->
-            <div class="row">
-                <div class="col-12 col-lg-8 m-auto">
-                <form class="multisteps-form__form">
-                    <!--single form panel-->
-                    <div class="multisteps-form__panel shadow p-4 rounded bg-white js-active" data-animation="slideHorz">
-                    <h3 class="multisteps-form__title">Выберите тип автомобиля</h3>
-                    <div class="multisteps-form__content">
-                        <div class="form-row mt-4">
-                            <select class="pick-car-type__select multisteps-form__form">
-                                <option value="smallCar" selected="selected">Легковой автомобиль</option>
-                                <option value="bigCar">Внедорожник / Минивэн</option>
-                            </select>
-                        </div>
-                        <div class="button-row d-flex mt-4">
-                        <button class="btn btn-primary ml-auto js-btn-next" type="button" title="Next">Дальше</button>
-                        </div>
+        </nav> -->
+
+
+        <section class="hero-section" id="section_1">
+            <div class="section-overlay"></div>
+
+            <div class="container d-flex justify-content-center align-items-center">
+                <div class="row">
+
+                    <div class="col-12 mt-auto mb-5 text-center content-container">
+                        <!-- <small>Festava Live Presents</small>
+                    
+                        <h1 class="text-white mb-5">Night Live 2023</h1> -->
+
+                        <img src="images/Delim large icon_b.png" alt="Delim Icon" class="header-image mb-5">
+                    
+                        <h2 class="text-white">Делим — приложение для простого разделения счетов</h2>
+                    
+                        <a class="btn custom-btn" href="files/delim-v1.0.0.apk" download="delim-v1.0.0.apk">
+                            <i class="fab fa-android"></i> Скачать
+                        </a>
                     </div>
-                    </div>
-                    <!--single form panel-->
-                    <div class="multisteps-form__panel shadow p-4 rounded bg-white" data-animation="slideHorz">
-                    <h3 class="multisteps-form__title">Выберите категорию шин</h3>
-                    <div class="multisteps-form__content">
-                        <div class="form-row mt-4">
-                            <select class="pick-tire-type__select multisteps-form__form">
-                                <option value="standardTire" selected="selected">Стандартный профиль</option>
-                                <option value="runflatTire">RUNFLAT</option>
-                            </select>
-                        </div>
-                        <div class="button-row d-flex mt-4">
-                        <button class="btn btn-primary js-btn-prev" type="button" title="Prev">Назад</button>
-                        <button class="btn btn-primary ml-auto js-btn-next" type="button" title="Next">Дальше</button>
-                        </div>
-                    </div>
-                    </div>
-                    <!--single form panel-->
-                    <div class="multisteps-form__panel shadow p-4 rounded bg-white" data-animation="slideHorz">
-                    <h3 class="multisteps-form__title">Выберите радиус колеса (R)</h3>
-                    <div class="multisteps-form__content">
-                        <div class="form-row mt-4">
-                            <select class="pick-tire-size__select multisteps-form__form">
-                                <option value="R13" selected="selected">R13</option>
-                                <option value="R14">R14</option>
-                                <option value="R15">R15</option>
-                                <option value="R16">R16</option>
-                                <option value="R17">R17</option>
-                                <option value="R18">R18</option>
-                                <option value="R19">R19</option>
-                                <option value="R20">R20</option>
-                                <option value="R21">R21</option>
-                                <option value="R22">R22</option>
-                                <option value="R23">R23</option>
-                                <option value="R24">R24>=</option>
-                            </select>
-                        </div>
-                        <div class="row">
-                        <div class="button-row d-flex mt-4 col-12">
-                            <button class="btn btn-primary js-btn-prev" type="button" title="Prev">Назад</button>
-                            <button class="btn btn-primary ml-auto js-btn-next" type="button" title="Next">Дальше</button>
-                        </div>
-                        </div>
-                    </div>
-                    </div>
-                    <!--single form panel-->
-                    <div class="multisteps-form__panel shadow p-4 rounded bg-white" data-animation="slideHorz">
-                    <h3 class="multisteps-form__title">Выберите услугу</h3>
-                    <div class="multisteps-form__content">
-                        <div class="form-row mt-4">
-                            <label class="service-option__select multisteps-form__form">
-                                <input type="radio" name="service" value="complex" id="complex-service" checked>
-                                <strong>Комплекс шиномонтажных работ</strong> <br>
-                                <small>(Включает: съем и установку колеса, демонтаж и монтаж шины, мойку, балансировку и упаковку сменных шин.)</small>
-                            </label>
+
+                    <!-- <div class="col-lg-12 col-12 mt-auto d-flex flex-column flex-lg-row text-center">
+                        <div class="date-wrap">
+                            <h5 class="text-white">
+                                <i class="custom-icon bi-clock me-2"></i>
+                                10 - 12<sup>th</sup>, Dec 2023
+                            </h5>
                         </div>
 
-                        <div class="form-row mt-4">
-                            <label class="service-option__select multisteps-form__form">
-                                <input type="radio" name="service" value="separate" id="separate-service">
-                                <strong>Отдельные операции шиномонтажа</strong>
-                            </label>
+                        <div class="location-wrap mx-auto py-3 py-lg-0">
+                            <h5 class="text-white">
+                                <i class="custom-icon bi-geo-alt me-2"></i>
+                                National Center, United States
+                            </h5>
                         </div>
 
-                        <div class="form-row mt-8">
-                            <div id="service-option-checkbox-group" class="checkbox-group">
-                                <label>
-                                    <input type="checkbox" name="operations-options" value="wheel-install" class="operation-checkbox">
-                                    Съем и установка колеса
-                                    <input type="number" name="quantity-wheel-install" class="operation-quantity" min="1" max="8" value="1" disabled>
-                                </label><br>
-                                
-                                <label>
-                                    <input type="checkbox" name="operations-options" value="tire-demount" class="operation-checkbox">
-                                    Демонтаж шины
-                                    <input type="number" name="quantity-tire-demount" class="operation-quantity" min="1" max="8" value="1" disabled>
-                                </label><br>
-                                
-                                <label>
-                                    <input type="checkbox" name="operations-options" value="tire-mount" class="operation-checkbox">
-                                    Монтаж шины
-                                    <input type="number" name="quantity-tire-mount" class="operation-quantity" min="1" max="8" value="1" disabled>
-                                </label><br>
-                                
-                                <label>
-                                    <input type="checkbox" name="operations-options" value="balancing" class="operation-checkbox">
-                                    Балансировка
-                                    <input type="number" name="quantity-balancing" class="operation-quantity" min="1" max="8" value="1" disabled>
-                                </label><br>
-                                
-                            </div>
-                        </div>
+                        <div class="social-share">
+                            <ul class="social-icon d-flex align-items-center justify-content-center">
+                                <span class="text-white me-3">Share:</span>
 
-                        <div class="form-row mt-4">
-                            <div id="extra-service-option-checkbox-group" class="checkbox-group">
-                                <label>
-                                    <input type="checkbox" name="operations" value="wheel-washing" class="extra-service-checkbox"> 
-                                    Технологическая мойка колеса
-                                    <input type="number" name="quantity-wheel-washing" class="extra-service-quantity" min="1" max="8" value="4" disabled>
-                                </label><br>
-                            
-                                <label>
-                                    <input type="checkbox" name="operations" value="valve-replacement" class="extra-service-checkbox"> 
-                                    Замена вентиля
-                                    <input type="number" name="quantity-valve-replacement" class="extra-service-quantity" min="1" max="8" value="4" disabled>
-                                </label><br>
-                            
-                                <label>
-                                    <input type="checkbox" name="operations" value="tire-disposal" class="extra-service-checkbox"> 
-                                    Утилизация покрышки
-                                    <input type="number" name="quantity-tire-disposal" class="extra-service-quantity" min="1" max="8" value="4" disabled>
-                                </label><br>
-                            </div>
+                                <li class="social-icon-item">
+                                    <a href="#" class="social-icon-link">
+                                        <span class="bi-facebook"></span>
+                                    </a>
+                                </li>
+
+                                <li class="social-icon-item">
+                                    <a href="#" class="social-icon-link">
+                                        <span class="bi-twitter"></span>
+                                    </a>
+                                </li>
+
+                                <li class="social-icon-item">
+                                    <a href="#" class="social-icon-link">
+                                        <span class="bi-instagram"></span>
+                                    </a>
+                                </li>
+                            </ul>
                         </div>
-                        
-                        <div class="button-row d-flex mt-4">
-                        <button class="btn btn-primary js-btn-prev" type="button" title="Prev">Назад</button>
-                        <button class="btn btn-success ml-auto" type="button" title="Send">Зарегистрировать и распечатать</button>
-                        </div>
-                    </div>
-                    </div>
-                </form>
+                    </div> -->
                 </div>
             </div>
+
+            <div class="video-wrap">
+                <video autoplay="" loop="" muted="" class="custom-video" poster="">
+                    <source src="video/delim-promo-video-site-low.mp4" type="video/mp4">
+
+                    Your browser does not support the video tag.
+                </video>
             </div>
-        </div>
-        </div>
-    </div>
+        </section>
+
+    <!--
+
+T e m p l a t e M o
+
+-->
 
     <!-- JAVASCRIPT FILES -->
-    <script type="text/javascript" src="js/form.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/jquery.sticky.js"></script>
+    <script src="js/click-scroll.js"></script>
+    <script src="js/custom.js"></script> -->
 
-  </body>
+</body>
 
 </html>

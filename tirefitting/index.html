@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Шиномонтаж</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="images/logo.png">
+
+    <!-- CSS FILES -->
+
+    <link href="css/form-styles.css" rel="stylesheet">
+
+    <link href="css/bootstrap-icons.css" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css?family=Poppins:400,600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css">
+
+</head>
+
+<body>
+
+    <!--PEN HEADER-->
+    <header class="header">
+        <h1 class="header__title">Шиномонтаж</h1>
+    </header>
+    <!--PEN CONTENT     -->
+    <div class="content">
+        <!--content inner-->
+        <div class="content__inner">
+        <div class="container">
+            <!--content title-->
+            <!-- <h2 class="content__title content__title--m-sm">Зарегестрировать заказ</h2> -->
+            <!--animations form-->
+            <!-- <form class="pick-animation my-4">
+            <div class="form-row">
+                <div class="col-5 m-auto">
+                <select class="pick-animation__select form-control">
+                    <option value="scaleIn" selected="selected">ScaleIn</option>
+                    <option value="scaleOut">ScaleOut</option>
+                    <option value="slideHorz">SlideHorz</option>
+                    <option value="slideVert">SlideVert</option>
+                    <option value="fadeIn">FadeIn</option>
+                </select>
+                </div>
+            </div>
+            </form> -->
+            <!--content title-->
+            <h2 class="content__title">Зарегестрировать заказ</h2>
+        </div>
+        <div class="container overflow-hidden">
+            <!--multisteps-form-->
+            <div class="multisteps-form">
+            <!--progress bar-->
+            <div class="row">
+                <div class="col-12 col-lg-8 ml-auto mr-auto mb-4">
+                <div class="multisteps-form__progress">
+                    <button class="multisteps-form__progress-btn js-active" type="button" title="Выбор типа автомобиля" disabled>Выбор типа автомобиля</button>
+                    <button class="multisteps-form__progress-btn" type="button" title="Категория шин" disabled>Категория шин</button>
+                    <button class="multisteps-form__progress-btn" type="button" title="Радиус колеса (R)" disabled>Радиус колеса (R)</button>
+                    <button class="multisteps-form__progress-btn" type="button" title="Выбор услуги" disabled>Выбор услуги</button>
+                </div>
+                </div>
+            </div>
+            <!--form panels-->
+            <div class="row">
+                <div class="col-12 col-lg-8 m-auto">
+                <form class="multisteps-form__form">
+                    <!--single form panel-->
+                    <div class="multisteps-form__panel shadow p-4 rounded bg-white js-active" data-animation="slideHorz">
+                    <h3 class="multisteps-form__title">Выберите тип автомобиля</h3>
+                    <div class="multisteps-form__content">
+                        <div class="form-row mt-4">
+                            <select class="pick-car-type__select multisteps-form__form">
+                                <option value="smallCar" selected="selected">Легковой автомобиль</option>
+                                <option value="bigCar">Внедорожник / Минивэн</option>
+                            </select>
+                        </div>
+                        <div class="button-row d-flex mt-4">
+                        <button class="btn btn-primary ml-auto js-btn-next" type="button" title="Next">Дальше</button>
+                        </div>
+                    </div>
+                    </div>
+                    <!--single form panel-->
+                    <div class="multisteps-form__panel shadow p-4 rounded bg-white" data-animation="slideHorz">
+                    <h3 class="multisteps-form__title">Выберите категорию шин</h3>
+                    <div class="multisteps-form__content">
+                        <div class="form-row mt-4">
+                            <select class="pick-tire-type__select multisteps-form__form">
+                                <option value="standardTire" selected="selected">Стандартный профиль</option>
+                                <option value="runflatTire">RUNFLAT</option>
+                            </select>
+                        </div>
+                        <div class="button-row d-flex mt-4">
+                        <button class="btn btn-primary js-btn-prev" type="button" title="Prev">Назад</button>
+                        <button class="btn btn-primary ml-auto js-btn-next" type="button" title="Next">Дальше</button>
+                        </div>
+                    </div>
+                    </div>
+                    <!--single form panel-->
+                    <div class="multisteps-form__panel shadow p-4 rounded bg-white" data-animation="slideHorz">
+                    <h3 class="multisteps-form__title">Выберите радиус колеса (R)</h3>
+                    <div class="multisteps-form__content">
+                        <div class="form-row mt-4">
+                            <select class="pick-tire-size__select multisteps-form__form">
+                                <option value="R13" selected="selected">R13</option>
+                                <option value="R14">R14</option>
+                                <option value="R15">R15</option>
+                                <option value="R16">R16</option>
+                                <option value="R17">R17</option>
+                                <option value="R18">R18</option>
+                                <option value="R19">R19</option>
+                                <option value="R20">R20</option>
+                                <option value="R21">R21</option>
+                                <option value="R22">R22</option>
+                                <option value="R23">R23</option>
+                                <option value="R24">R24>=</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                        <div class="button-row d-flex mt-4 col-12">
+                            <button class="btn btn-primary js-btn-prev" type="button" title="Prev">Назад</button>
+                            <button class="btn btn-primary ml-auto js-btn-next" type="button" title="Next">Дальше</button>
+                        </div>
+                        </div>
+                    </div>
+                    </div>
+                    <!--single form panel-->
+                    <div class="multisteps-form__panel shadow p-4 rounded bg-white" data-animation="slideHorz">
+                    <h3 class="multisteps-form__title">Выберите услугу</h3>
+                    <div class="multisteps-form__content">
+                        <div class="form-row mt-4">
+                            <label class="service-option__select multisteps-form__form">
+                                <input type="radio" name="service" value="complex" id="complex-service" checked>
+                                <strong>Комплекс шиномонтажных работ</strong> <br>
+                                <small>(Включает: съем и установку колеса, демонтаж и монтаж шины, мойку, балансировку и упаковку сменных шин.)</small>
+                            </label>
+                        </div>
+
+                        <div class="form-row mt-4">
+                            <label class="service-option__select multisteps-form__form">
+                                <input type="radio" name="service" value="separate" id="separate-service">
+                                <strong>Отдельные операции шиномонтажа</strong>
+                            </label>
+                        </div>
+
+                        <div class="form-row mt-8">
+                            <div id="service-option-checkbox-group" class="checkbox-group">
+                                <label>
+                                    <input type="checkbox" name="operations-options" value="wheel-install" class="operation-checkbox">
+                                    Съем и установка колеса
+                                    <input type="number" name="quantity-wheel-install" class="operation-quantity" min="1" max="8" value="1" disabled>
+                                </label><br>
+                                
+                                <label>
+                                    <input type="checkbox" name="operations-options" value="tire-demount" class="operation-checkbox">
+                                    Демонтаж шины
+                                    <input type="number" name="quantity-tire-demount" class="operation-quantity" min="1" max="8" value="1" disabled>
+                                </label><br>
+                                
+                                <label>
+                                    <input type="checkbox" name="operations-options" value="tire-mount" class="operation-checkbox">
+                                    Монтаж шины
+                                    <input type="number" name="quantity-tire-mount" class="operation-quantity" min="1" max="8" value="1" disabled>
+                                </label><br>
+                                
+                                <label>
+                                    <input type="checkbox" name="operations-options" value="balancing" class="operation-checkbox">
+                                    Балансировка
+                                    <input type="number" name="quantity-balancing" class="operation-quantity" min="1" max="8" value="1" disabled>
+                                </label><br>
+                                
+                            </div>
+                        </div>
+
+                        <div class="form-row mt-4">
+                            <div id="extra-service-option-checkbox-group" class="checkbox-group">
+                                <label>
+                                    <input type="checkbox" name="operations" value="wheel-washing" class="extra-service-checkbox"> 
+                                    Технологическая мойка колеса
+                                    <input type="number" name="quantity-wheel-washing" class="extra-service-quantity" min="1" max="8" value="4" disabled>
+                                </label><br>
+                            
+                                <label>
+                                    <input type="checkbox" name="operations" value="valve-replacement" class="extra-service-checkbox"> 
+                                    Замена вентиля
+                                    <input type="number" name="quantity-valve-replacement" class="extra-service-quantity" min="1" max="8" value="4" disabled>
+                                </label><br>
+                            
+                                <label>
+                                    <input type="checkbox" name="operations" value="tire-disposal" class="extra-service-checkbox"> 
+                                    Утилизация покрышки
+                                    <input type="number" name="quantity-tire-disposal" class="extra-service-quantity" min="1" max="8" value="4" disabled>
+                                </label><br>
+                            </div>
+                        </div>
+                        
+                        <div class="button-row d-flex mt-4">
+                        <button class="btn btn-primary js-btn-prev" type="button" title="Prev">Назад</button>
+                        <button class="btn btn-success ml-auto" type="button" title="Send">Зарегистрировать и распечатать</button>
+                        </div>
+                    </div>
+                    </div>
+                </form>
+                </div>
+            </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT FILES -->
+    <script type="text/javascript" src="js/form.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+  </body>
+
+</html>
