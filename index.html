@@ -2,107 +2,182 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>VK ID Auth (No SDK)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VK ID Manual Auth (No SDK)</title>
     <style>
-        .profile-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; max-width: 300px; display: none; }
-        .profile-card img { border-radius: 50%; width: 100px; }
-        .btn-vk { background: #0077ff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; }
+        body { font-family: -apple-system, system-ui, "Helvetica Neue", Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f2f5; margin: 0; }
+        .card { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        .btn-vk { background-color: #0077ff; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: 500; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.2s; }
+        .btn-vk:hover { background-color: #0066ee; }
+        #user-info { display: none; margin-top: 20px; text-align: left; border-top: 1px solid #eee; padding-top: 20px; }
+        #user-info img { width: 80px; height: 80px; border-radius: 50%; display: block; margin: 0 auto 15px; }
+        pre { background: #f8f8f8; padding: 10px; font-size: 12px; overflow-x: auto; border-radius: 4px; }
+        .status { font-size: 14px; color: #666; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-<a href="#" id="login-btn" class="btn-vk">Войти через VK ID</a>
+<div class="card">
+    <h2>VK ID Manual</h2>
+    <div id="app-content">
+        <p class="status" id="status">Нажмите кнопку для входа</p>
+        <button id="login-btn" class="btn-vk">Войти через VK ID</button>
+    </div>
 
-<div id="profile" class="profile-card">
-    <img id="avatar" src="" alt="Avatar">
-    <h2 id="name"></h2>
-    <p>ID: <span id="user-id"></span></p>
-    <p>Token: <small id="token" style="word-break: break-all;"></small></p>
+    <div id="user-info">
+        <img id="avatar" src="" alt="">
+        <div style="text-align: center; font-weight: bold; margin-bottom: 10px;" id="full-name"></div>
+        <div class="status">Данные из UserInfo:</div>
+        <pre id="raw-data"></pre>
+        <button onclick="location.href='https://artmotika.github.io/'" style="margin-top:10px; width:100%; cursor:pointer;">Выйти / Сбросить</button>
+    </div>
 </div>
 
 <script>
-    const CONFIG = {
-        client_id: '54421608',
-        redirect_uri: 'https://artmotika.github.io/', // Должен точно совпадать с настройками в кабинете VK
-        scope: 'email', // Запрашиваемые права
-        auth_url: 'https://id.vk.com/authorize',
-        token_url: 'https://id.vk.com/oauth2/auth',
-        user_info_url: 'https://id.vk.com/oauth2/user_info'
+    const CLIENT_ID = '54421608';
+    const REDIRECT_URI = 'https://artmotika.github.io/';
+
+    // --- 1. КРИПТОГРАФИЧЕСКИЕ ФУНКЦИИ ДЛЯ PKCE ---
+
+    function generateRandomString(length) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        const values = new Uint8Array(length);
+        crypto.getRandomValues(values);
+        for (let i = 0; i < length; i++) result += chars[values[i] % chars.length];
+        return result;
+    }
+
+    async function generateCodeChallenge(verifier) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(verifier);
+        const digest = await crypto.subtle.digest('SHA-256', data);
+        return btoa(String.fromCharCode(...new Uint8Array(digest)))
+            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    // --- 2. ЛОГИКА АВТОРИЗАЦИИ ---
+
+    const loginBtn = document.getElementById('login-btn');
+    const statusText = document.getElementById('status');
+
+    // Функция генерации Device ID (аналог SDK)
+    function getDeviceId() {
+        let id = localStorage.getItem('vk_device_id');
+        if (!id) {
+            id = generateRandomString(16);
+            localStorage.setItem('vk_device_id', id);
+        }
+        return id;
+    }
+
+    // ШАГ 1: Редирект на VK
+    loginBtn.onclick = async () => {
+        const state = generateRandomString(20);
+        const codeVerifier = generateRandomString(64);
+        const codeChallenge = await generateCodeChallenge(codeVerifier);
+
+        // Сохраняем данные для проверки после возврата
+        sessionStorage.setItem('vk_state', state);
+        sessionStorage.setItem('vk_code_verifier', codeVerifier);
+
+        const params = new URLSearchParams({
+            response_type: 'code',
+            client_id: CLIENT_ID,
+            redirect_uri: REDIRECT_URI,
+            state: state,
+            code_challenge: codeChallenge,
+            code_challenge_method: 's256',
+            scope: 'email',
+            device_id: getDeviceId(),
+            lang_id: '0',
+            v: '2.6.2'
+        });
+
+        window.location.href = `https://id.vk.com/authorize?${params.toString()}`;
     };
 
-    // 1. Генерация ссылки для авторизации
-    const loginBtn = document.getElementById('login-btn');
-    const state = Math.random().toString(36).substring(7); // Защита от CSRF
-
-    const authParams = new URLSearchParams({
-        response_type: 'code',
-        client_id: CONFIG.client_id,
-        redirect_uri: CONFIG.redirect_uri,
-        scope: CONFIG.scope,
-        state: state
-    });
-
-    loginBtn.href = `${CONFIG.auth_url}?${authParams.toString()}`;
-
-    // 2. Логика обработки ответа (после редиректа)
-    async function handleAuth() {
+    // ШАГ 2: Обработка возврата (Callback)
+    async function handleAuthCallback() {
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
-        const deviceId = Math.random().toString(36).substring(2, 12); // Упрощенно для примера
+        const state = urlParams.get('state');
+        const savedState = sessionStorage.getItem('vk_state');
+        const codeVerifier = sessionStorage.getItem('vk_code_verifier');
 
-        if (code) {
-            loginBtn.style.display = 'none';
-            try {
-                // 3. Обмен кода на токен
-                // ВНИМАНИЕ: По правилам OAuth2, POST запрос на /auth может требовать client_secret.
-                // Если VK позволяет Public Client Flow (без секрета), используем fetch:
-                const tokenResponse = await fetch(CONFIG.token_url, {
+        if (!code) return;
+
+        // Проверка безопасности
+        if (state !== savedState) {
+            statusText.innerText = "Ошибка: неверный state!";
+            return;
+        }
+
+        statusText.innerText = "Обмен кода на токен...";
+        loginBtn.style.display = 'none';
+
+        try {
+            // ШАГ 3: Получение токена (POST запрос)
+            const tokenResponse = await fetch('https://id.vk.com/oauth2/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    grant_type: 'authorization_code',
+                    code: code,
+                    code_verifier: codeVerifier,
+                    client_id: CLIENT_ID,
+                    device_id: getDeviceId(),
+                    redirect_uri: REDIRECT_URI
+                })
+            });
+
+            const tokenData = await tokenResponse.json();
+
+            if (tokenData.access_token) {
+                // ШАГ 4: Получение данных пользователя
+                statusText.innerText = "Загрузка профиля...";
+
+                const userResponse = await fetch('https://id.vk.com/oauth2/user_info', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: new URLSearchParams({
-                        grant_type: 'authorization_code',
-                        code: code,
-                        client_id: CONFIG.client_id,
-                        redirect_uri: CONFIG.redirect_uri,
-                        device_id: deviceId,
-                        state: urlParams.get('state')
+                        access_token: tokenData.access_token,
+                        client_id: CLIENT_ID
                     })
                 });
 
-                const tokenData = await tokenResponse.json();
-
-                if (tokenData.access_token) {
-                    // 4. Получение данных пользователя
-                    const userResponse = await fetch(CONFIG.user_info_url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: new URLSearchParams({
-                            access_token: tokenData.access_token,
-                            client_id: CONFIG.client_id
-                        })
-                    });
-
-                    const userData = await userResponse.json();
-                    displayUser(userData.user, tokenData.access_token);
-                }
-            } catch (error) {
-                console.error('Ошибка при авторизации:', error);
+                const userData = await userResponse.json();
+                displayUser(userData.user, tokenData.access_token);
+            } else {
+                statusText.innerText = "Ошибка получения токена: " + JSON.stringify(tokenData);
             }
+        } catch (err) {
+            statusText.innerText = "Сетевая ошибка: " + err.message;
+            console.error(err);
         }
     }
 
     function displayUser(user, token) {
-        document.getElementById('profile').style.display = 'block';
-        document.getElementById('name').textContent = `${user.first_name} ${user.last_name}`;
-        document.getElementById('avatar').src = user.avatar;
-        document.getElementById('user-id').textContent = user.user_id;
-        document.getElementById('token').textContent = token;
+        document.getElementById('app-content').style.display = 'none';
+        document.getElementById('user-info').style.display = 'block';
 
-        // Очищаем URL от параметров после успешного входа
-        window.history.replaceState({}, document.title, "/");
+        document.getElementById('avatar').src = user.avatar;
+        document.getElementById('full-name').innerText = `${user.first_name} ${user.last_name}`;
+
+        // Показываем часть данных для отладки
+        document.getElementById('raw-data').textContent = JSON.stringify({
+            id: user.user_id,
+            email: user.email,
+            token_prefix: token.substring(0, 15) + '...'
+        }, null, 2);
+
+        // Чистим URL
+        window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    handleAuth();
+    // Запуск проверки при загрузке страницы
+    handleAuthCallback();
 </script>
+
 </body>
 </html>
