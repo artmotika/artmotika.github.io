@@ -2,173 +2,140 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VK ID Manual Auth (No SDK)</title>
+    <title>VK ID: Manual Exchange</title>
     <style>
-        body { font-family: -apple-system, system-ui, "Helvetica Neue", Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f2f5; margin: 0; }
-        .card { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
-        .btn-vk { background-color: #0077ff; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: 500; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.2s; }
-        .btn-vk:hover { background-color: #0066ee; }
-        #user-info { display: none; margin-top: 20px; text-align: left; border-top: 1px solid #eee; padding-top: 20px; }
-        #user-info img { width: 80px; height: 80px; border-radius: 50%; display: block; margin: 0 auto 15px; }
-        pre { background: #f8f8f8; padding: 10px; font-size: 12px; overflow-x: auto; border-radius: 4px; }
-        .status { font-size: 14px; color: #666; margin-bottom: 10px; }
+        body { font-family: system-ui, sans-serif; padding: 40px; background: #f0f2f5; text-align: center; }
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); display: inline-block; min-width: 320px; }
+        .btn { background: #0077ff; color: white; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; text-decoration: none; font-weight: bold; }
+        #log { text-align: left; background: #222; color: #00ff00; padding: 15px; border-radius: 8px; margin-top: 20px; font-size: 12px; white-space: pre-wrap; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>VK ID Manual</h2>
-    <div id="app-content">
-        <p class="status" id="status">Нажмите кнопку для входа</p>
-        <button id="login-btn" class="btn-vk">Войти через VK ID</button>
+<div class="container">
+    <h2>Авторизация без SDK</h2>
+    <div id="ui-box">
+        <button id="login-btn" class="btn">Войти через VK</button>
     </div>
-
-    <div id="user-info">
-        <img id="avatar" src="" alt="">
-        <div style="text-align: center; font-weight: bold; margin-bottom: 10px;" id="full-name"></div>
-        <div class="status">Данные из UserInfo:</div>
-        <pre id="raw-data"></pre>
-        <button onclick="location.href='https://artmotika.github.io/'" style="margin-top:10px; width:100%; cursor:pointer;">Выйти / Сбросить</button>
-    </div>
+    <div id="log">Ожидание действий...</div>
 </div>
 
 <script>
-    const CLIENT_ID = '54421608';
+    const APP_ID = '54421608';
     const REDIRECT_URI = 'https://artmotika.github.io/';
+    const logEl = document.getElementById('log');
 
-    // 1. Генерация корректного device_id (только буквы и цифры, 16 символов)
-    function getDeviceId() {
-        let id = localStorage.getItem('vk_device_id');
-        if (!id) {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            const array = new Uint8Array(16);
-            crypto.getRandomValues(array);
-            id = Array.from(array).map(b => chars[b % chars.length]).join('');
-            localStorage.setItem('vk_device_id', id);
-        }
-        return id;
-    }
+    function print(msg) { logEl.innerText += '\n> ' + msg; console.log(msg); }
 
-    // Вспомогательные функции для PKCE
-    function generateRandomString(length) {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        const array = new Uint8Array(length);
-        crypto.getRandomValues(array);
-        return Array.from(array).map(b => chars[b % chars.length]).join('');
-    }
-
-    async function generateCodeChallenge(verifier) {
+    // 1. Генерация PKCE
+    async function getPKCE() {
+        const verifier = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+            .map(b => 'abcdefghijklmnopqrstuvwxyz0123456789'[b % 36]).join('');
         const encoder = new TextEncoder();
-        const data = encoder.encode(verifier);
-        const digest = await crypto.subtle.digest('SHA-256', data);
-        return btoa(String.fromCharCode(...new Uint8Array(digest)))
+        const hash = await crypto.subtle.digest('SHA-256', encoder.encode(verifier));
+        const challenge = btoa(String.fromCharCode(...new Uint8Array(hash)))
             .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        return { verifier, challenge };
     }
 
-    // --- ОСНОВНАЯ ЛОГИКА ---
+    // ШАГ 1: Формирование GET-запроса
+    document.getElementById('login-btn').onclick = async () => {
+        const pkce = await getPKCE();
+        const state = Math.random().toString(36).substring(2, 12);
 
-    const loginBtn = document.getElementById('login-btn');
-    const statusText = document.getElementById('status');
-
-    // Шаг 1: Подготовка и Редирект
-    loginBtn.onclick = async () => {
-        const state = generateRandomString(32);
-        const codeVerifier = generateRandomString(64);
-        const codeChallenge = await generateCodeChallenge(codeVerifier);
-        const deviceId = getDeviceId();
-
-        // Сохраняем всё необходимое для второго этапа
+        // Сохраняем verifier для второго шага
+        sessionStorage.setItem('vk_verifier', pkce.verifier);
         sessionStorage.setItem('vk_state', state);
-        sessionStorage.setItem('vk_code_verifier', codeVerifier);
 
-        const params = new URLSearchParams({
-            response_type: 'code',
-            client_id: CLIENT_ID,
-            redirect_uri: REDIRECT_URI,
-            state: state,
-            code_challenge: codeChallenge,
-            code_challenge_method: 's256',
-            scope: 'email',
-            device_id: deviceId, // Передаем строго здесь
-            v: '2.6.2'
-        });
+        const url = new URL('https://id.vk.com/authorize');
+        url.searchParams.set('response_type', 'code');
+        url.searchParams.set('client_id', APP_ID);
+        url.searchParams.set('redirect_uri', REDIRECT_URI);
+        url.searchParams.set('state', state);
+        url.searchParams.set('code_challenge', pkce.challenge);
+        url.searchParams.set('code_challenge_method', 's256');
+        url.searchParams.set('scope', 'email');
 
-        window.location.href = `https://id.vk.com/authorize?${params.toString()}`;
+        print("Перенаправление на VK...");
+        window.location.href = url.toString();
     };
 
-    // Шаг 2: Обработка возврата
-    async function handleAuthCallback() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        const state = urlParams.get('state');
+    // ШАГ 2: Обработка ответа и обмен
+    async function handleResponse() {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        const state = params.get('state');
 
-        const savedState = sessionStorage.getItem('vk_state');
-        const codeVerifier = sessionStorage.getItem('vk_code_verifier');
-        const deviceId = getDeviceId(); // Берем тот же ID из localStorage
+        // ВНИМАНИЕ: Проверяем, не прислал ли VK нам device_id в URL
+        let deviceId = params.get('device_id');
 
         if (!code) return;
 
+        print("Код получен. Проверяем параметры...");
+
+        const verifier = sessionStorage.getItem('vk_verifier');
+        const savedState = sessionStorage.getItem('vk_state');
+
         if (state !== savedState) {
-            statusText.innerText = "Ошибка: state не совпадает";
+            print("Ошибка: State не совпадает!");
             return;
         }
 
-        statusText.innerText = "Обмениваем код на токен...";
-        loginBtn.style.display = 'none';
+        // Если VK не прислал device_id в URL, используем запасной вариант
+        if (!deviceId) {
+            print("device_id не найден в URL, используем временный...");
+            deviceId = 'static_device_id_12345';
+        }
+
+        print(`Используем device_id: ${deviceId}`);
 
         try {
-            // Формируем тело запроса строго по спецификации
-            const body = new URLSearchParams({
-                grant_type: 'authorization_code',
-                code: code,
-                code_verifier: codeVerifier,
-                client_id: CLIENT_ID,
-                device_id: getDeviceId(), // Должен быть 1-в-1 как в первом запросе
-                redirect_uri: REDIRECT_URI
-            });
+            print("Запрос на обмен токена (POST /oauth2/auth)...");
 
             const response = await fetch('https://id.vk.com/oauth2/auth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: body.toString()
+                body: new URLSearchParams({
+                    grant_type: 'authorization_code',
+                    code: code,
+                    code_verifier: verifier,
+                    client_id: APP_ID,
+                    device_id: deviceId,
+                    redirect_uri: REDIRECT_URI
+                })
             });
 
             const data = await response.json();
 
             if (data.access_token) {
-                // Шаг 3: Получение User Info
-                const userResponse = await fetch('https://id.vk.com/oauth2/user_info', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({
-                        access_token: data.access_token,
-                        client_id: CLIENT_ID
-                    })
-                });
-
-                const userData = await userResponse.json();
-                displayUser(userData.user, data.access_token);
+                print("УСПЕХ! Токен получен.");
+                await fetchUserInfo(data.access_token);
             } else {
-                statusText.innerText = `Ошибка API: ${data.error_description || data.error}`;
-                console.error('Ошибка VK:', data);
+                print(`ОШИБКА: ${data.error_description || data.error}`);
             }
-        } catch (err) {
-            statusText.innerText = "Ошибка сети (CORS?): " + err.message;
+        } catch (e) {
+            print("Ошибка сети (CORS): " + e.message);
+            print("Примечание: Прямой обмен токена из браузера может блокироваться VK по соображениям безопасности (CORS).");
         }
     }
 
-    function displayUser(user, token) {
-        document.getElementById('app-content').style.display = 'none';
-        const info = document.getElementById('user-info');
-        info.style.display = 'block';
-        document.getElementById('avatar').src = user.avatar;
-        document.getElementById('full-name').innerText = `${user.first_name} ${user.last_name}`;
-        document.getElementById('raw-data').textContent = JSON.stringify(user, null, 2);
+    async function fetchUserInfo(token) {
+        const res = await fetch('https://id.vk.com/oauth2/user_info', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ access_token: token, client_id: APP_ID })
+        });
+        const user = await res.json();
+        document.getElementById('ui-box').innerHTML = `
+            <div style="text-align:left; background:#e7f3ff; padding:15px; border-radius:8px; color:#000">
+                <b>${user.user.first_name} ${user.user.last_name}</b><br>
+                ID: ${user.user.user_id}
+            </div>
+        `;
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    handleAuthCallback();
+    handleResponse();
 </script>
 
 </body>
