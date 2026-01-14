@@ -37,29 +37,25 @@
     const CLIENT_ID = '54421608';
     const REDIRECT_URI = 'https://artmotika.github.io/';
 
-    // 1. Улучшенная генерация Device ID
+    // 1. Генерация корректного device_id (только буквы и цифры, 16 символов)
     function getDeviceId() {
         let id = localStorage.getItem('vk_device_id');
         if (!id) {
-            // Пытаемся использовать UUID, если нет - генерируем строку
-            if (typeof crypto.randomUUID === 'function') {
-                id = crypto.randomUUID();
-            } else {
-                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-                id = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-                           .map(b => chars[b % chars.length]).join('');
-            }
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            const array = new Uint8Array(16);
+            crypto.getRandomValues(array);
+            id = Array.from(array).map(b => chars[b % chars.length]).join('');
             localStorage.setItem('vk_device_id', id);
         }
         return id;
     }
 
-    // 2. Вспомогательные функции PKCE
+    // Вспомогательные функции для PKCE
     function generateRandomString(length) {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        const values = new Uint8Array(length);
-        crypto.getRandomValues(values);
-        return Array.from(values).map(b => chars[b % chars.length]).join('');
+        const array = new Uint8Array(length);
+        crypto.getRandomValues(array);
+        return Array.from(array).map(b => chars[b % chars.length]).join('');
     }
 
     async function generateCodeChallenge(verifier) {
@@ -70,77 +66,78 @@
             .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     }
 
-    // --- ЛОГИКА ---
+    // --- ОСНОВНАЯ ЛОГИКА ---
 
     const loginBtn = document.getElementById('login-btn');
     const statusText = document.getElementById('status');
 
+    // Шаг 1: Подготовка и Редирект
     loginBtn.onclick = async () => {
         const state = generateRandomString(32);
         const codeVerifier = generateRandomString(64);
         const codeChallenge = await generateCodeChallenge(codeVerifier);
-        const deviceId = getDeviceId(); // Генерируем/получаем заранее
+        const deviceId = getDeviceId();
 
+        // Сохраняем всё необходимое для второго этапа
         sessionStorage.setItem('vk_state', state);
         sessionStorage.setItem('vk_code_verifier', codeVerifier);
 
-        // Важно: передаем и client_id, и app_id, и device_id
         const params = new URLSearchParams({
             response_type: 'code',
             client_id: CLIENT_ID,
-            app_id: CLIENT_ID,
             redirect_uri: REDIRECT_URI,
             state: state,
             code_challenge: codeChallenge,
             code_challenge_method: 's256',
             scope: 'email',
-            device_id: deviceId,
-            lang_id: '0',
+            device_id: deviceId, // Передаем строго здесь
             v: '2.6.2'
         });
 
         window.location.href = `https://id.vk.com/authorize?${params.toString()}`;
     };
 
+    // Шаг 2: Обработка возврата
     async function handleAuthCallback() {
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
         const state = urlParams.get('state');
+
         const savedState = sessionStorage.getItem('vk_state');
         const codeVerifier = sessionStorage.getItem('vk_code_verifier');
-        const deviceId = getDeviceId(); // Тот же самый ID из localStorage
+        const deviceId = getDeviceId(); // Берем тот же ID из localStorage
 
         if (!code) return;
 
         if (state !== savedState) {
-            statusText.innerText = "Ошибка: неверный state (возможна атака CSRF)";
+            statusText.innerText = "Ошибка: state не совпадает";
             return;
         }
 
-        statusText.innerText = "Обмен кода на токен...";
+        statusText.innerText = "Обмениваем код на токен...";
         loginBtn.style.display = 'none';
 
         try {
-            // ВАЖНО: exchange tokens
+            // Формируем тело запроса строго по спецификации
+            const body = new URLSearchParams({
+                grant_type: 'authorization_code',
+                code: code,
+                code_verifier: codeVerifier,
+                client_id: CLIENT_ID,
+                device_id: deviceId, // Должен быть 1-в-1 как в первом запросе
+                redirect_uri: REDIRECT_URI
+            });
+
             const response = await fetch('https://id.vk.com/oauth2/auth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                    grant_type: 'authorization_code',
-                    code: code,
-                    code_verifier: codeVerifier,
-                    client_id: CLIENT_ID,
-                    device_id: deviceId, // Должен быть идентичен тому, что в первом запросе
-                    redirect_uri: REDIRECT_URI,
-                    state: state
-                })
+                body: body.toString()
             });
 
             const data = await response.json();
 
             if (data.access_token) {
-                statusText.innerText = "Получение данных пользователя...";
-
+                // Шаг 3: Получение User Info
                 const userResponse = await fetch('https://id.vk.com/oauth2/user_info', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -153,12 +150,11 @@
                 const userData = await userResponse.json();
                 displayUser(userData.user, data.access_token);
             } else {
-                // Если снова ошибка, выводим её полностью
                 statusText.innerText = `Ошибка API: ${data.error_description || data.error}`;
-                console.error('Full error data:', data);
+                console.error('Ошибка VK:', data);
             }
         } catch (err) {
-            statusText.innerText = "Сетевая ошибка (возможно CORS): " + err.message;
+            statusText.innerText = "Ошибка сети (CORS?): " + err.message;
         }
     }
 
@@ -166,11 +162,9 @@
         document.getElementById('app-content').style.display = 'none';
         const info = document.getElementById('user-info');
         info.style.display = 'block';
-
         document.getElementById('avatar').src = user.avatar;
         document.getElementById('full-name').innerText = `${user.first_name} ${user.last_name}`;
         document.getElementById('raw-data').textContent = JSON.stringify(user, null, 2);
-
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 
