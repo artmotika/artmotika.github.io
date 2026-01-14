@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>VK ID Auth (No SDK)</title>
+    <style>
+        .profile-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; max-width: 300px; display: none; }
+        .profile-card img { border-radius: 50%; width: 100px; }
+        .btn-vk { background: #0077ff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; }
+    </style>
+</head>
+<body>
+
+<a href="#" id="login-btn" class="btn-vk">Войти через VK ID</a>
+
+<div id="profile" class="profile-card">
+    <img id="avatar" src="" alt="Avatar">
+    <h2 id="name"></h2>
+    <p>ID: <span id="user-id"></span></p>
+    <p>Token: <small id="token" style="word-break: break-all;"></small></p>
+</div>
+
+<script>
+    const CONFIG = {
+        client_id: '54421608',
+        redirect_uri: 'https://artmotika.github.io/', // Должен точно совпадать с настройками в кабинете VK
+        scope: 'email', // Запрашиваемые права
+        auth_url: 'https://id.vk.com/authorize',
+        token_url: 'https://id.vk.com/oauth2/auth',
+        user_info_url: 'https://id.vk.com/oauth2/user_info'
+    };
+
+    // 1. Генерация ссылки для авторизации
+    const loginBtn = document.getElementById('login-btn');
+    const state = Math.random().toString(36).substring(7); // Защита от CSRF
+
+    const authParams = new URLSearchParams({
+        response_type: 'code',
+        client_id: CONFIG.client_id,
+        redirect_uri: CONFIG.redirect_uri,
+        scope: CONFIG.scope,
+        state: state
+    });
+
+    loginBtn.href = `${CONFIG.auth_url}?${authParams.toString()}`;
+
+    // 2. Логика обработки ответа (после редиректа)
+    async function handleAuth() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const deviceId = Math.random().toString(36).substring(2, 12); // Упрощенно для примера
+
+        if (code) {
+            loginBtn.style.display = 'none';
+            try {
+                // 3. Обмен кода на токен
+                // ВНИМАНИЕ: По правилам OAuth2, POST запрос на /auth может требовать client_secret.
+                // Если VK позволяет Public Client Flow (без секрета), используем fetch:
+                const tokenResponse = await fetch(CONFIG.token_url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                        grant_type: 'authorization_code',
+                        code: code,
+                        client_id: CONFIG.client_id,
+                        redirect_uri: CONFIG.redirect_uri,
+                        device_id: deviceId,
+                        state: urlParams.get('state')
+                    })
+                });
+
+                const tokenData = await tokenResponse.json();
+
+                if (tokenData.access_token) {
+                    // 4. Получение данных пользователя
+                    const userResponse = await fetch(CONFIG.user_info_url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({
+                            access_token: tokenData.access_token,
+                            client_id: CONFIG.client_id
+                        })
+                    });
+
+                    const userData = await userResponse.json();
+                    displayUser(userData.user, tokenData.access_token);
+                }
+            } catch (error) {
+                console.error('Ошибка при авторизации:', error);
+            }
+        }
+    }
+
+    function displayUser(user, token) {
+        document.getElementById('profile').style.display = 'block';
+        document.getElementById('name').textContent = `${user.first_name} ${user.last_name}`;
+        document.getElementById('avatar').src = user.avatar;
+        document.getElementById('user-id').textContent = user.user_id;
+        document.getElementById('token').textContent = token;
+
+        // Очищаем URL от параметров после успешного входа
+        window.history.replaceState({}, document.title, "/");
+    }
+
+    handleAuth();
+</script>
+</body>
+</html>
