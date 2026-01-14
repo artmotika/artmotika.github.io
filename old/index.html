@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Reels</title>
+    <!-- Подключаем Telegram Web App API -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #000;
+            --text-color: #fff;
+            --btn-bg: rgba(255, 255, 255, 0.15);
+            --btn-bg-hover: rgba(255, 255, 255, 0.25);
+            --icon-color: #fff;
+            --icon-color-active: #fe2c55;
+            --border-radius: 12px;
+            --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* 1. Сброс стилей и настройка Viewport */
+        html {
+            height: 100vh;
+            height: var(--tg-viewport-stable-height, 100vh);
+            background: var(--bg-color);
+        }
+
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+            color: var(--text-color);
+            background: var(--bg-color);
+            overflow: hidden; 
+        }
+
+        /* 2. Контейнер ленты */
+        .reel-container {
+            width: 100%;
+            height: 100%;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scrollbar-width: none; 
+            -ms-overflow-style: none; 
+        }
+        .reel-container::-webkit-scrollbar {
+            display: none; 
+        }
+
+        /* 3. Отдельный рилс */
+        .reel-item {
+            width: 100%;
+            height: 100%;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            position: relative;
+            background: #111; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 4. Плеер YouTube (iframe) */
+        .youtube-player-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .youtube-player-iframe {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+
+        /* 5. Оверлей с информацией (текст) */
+        .reel-info-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 15px;
+            right: 80px; 
+            color: var(--text-color);
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+        .reel-author {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        .reel-author img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 8px;
+            background: #555;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .reel-description {
+            font-size: 14px;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 6. Боковые кнопки */
+        .reel-actions {
+            position: absolute;
+            bottom: 20px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 10;
+        }
+        .reel-action-btn {
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            color: var(--icon-color);
+        }
+        .reel-action-btn svg {
+            width: 32px;
+            height: 32px;
+            filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.4));
+        }
+        .reel-action-btn span {
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 4px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+        }
+        .reel-action-btn.active {
+            color: var(--icon-color-active);
+        }
+
+        /* 7. Индикатор загрузки */
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--btn-bg);
+            border-top-color: var(--text-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin: -25px 0 0 -25px;
+            z-index: 100;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Сообщение об ошибке */
+        .error-message {
+            display: none; 
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 8px;
+            z-index: 20;
+            text-align: center;
+            font-size: 14px;
+        }
+        .reel-item.has-error .error-message {
+            display: block; 
+        }
+        .reel-item.has-error .reel-actions,
+        .reel-item.has-error .reel-info-overlay {
+            display: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="reel-container" id="reel-container">
+        <!-- Рилсы будут вставлены сюда динамически -->
+    </div>
+
+    <!-- Индикатор загрузки (сначала виден) -->
+    <div class="loading-spinner" id="loading-spinner"></div>
+
+    <script>
+        // --- 1. Настройка Telegram Mini App ---
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+        const hapticImpact = (style = 'medium') => {
+            if (tg.HapticFeedback && tg.HapticFeedback.impactOccurred) {
+                tg.HapticFeedback.impactOccurred(style);
+            }
+        };
+
+        // --- 2. Глобальные переменные и API YouTube ---
+        const reelContainer = document.getElementById('reel-container');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        
+        let currentPlayingReel = null; 
+        let isLoading = false; 
+        let nextPageToken = null; 
+        
+        const BACKEND_URL = 'http://5.231.5.199:3000'; // IP-адрес вашего сервера
+
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        // --- 3. Логика загрузки и создания рилсов ---
+
+        /**
+         * 3.1. Загрузка данных с нашего бэкенда
+         */
+        async function fetchReelsFromBackend(token = null) {
+            isLoading = true;
+            console.log(`Запрос бэкенду (токен: ${token || 'N/A'})...`);
+            
+            if (!token) {
+                loadingSpinner.style.display = 'block';
+            }
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/reels?token=${token || ''}`);
+                if (!response.ok) {
+                    throw new Error(`Ошибка сети: ${response.statusText}`);
+                }
+                const data = await response.json();
+                
+                loadingSpinner.style.display = 'none';
+
+                if (data.reels && data.reels.length > 0) {
+                    nextPageToken = data.nextPageToken;
+                    // ! КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ:
+                    // Сначала создаем HTML, потом инициализируем плееры
+                    createReelElements(data.reels);
+                } else {
+                    console.log("Больше нет рилсов для загрузки.");
+                    nextPageToken = null; 
+                }
+
+            } catch (error) {
+                console.error("Ошибка при загрузке рилсов:", error);
+                loadingSpinner.style.display = 'none';
+                tg.showAlert("Не удалось загрузить видео. Попробуйте позже.");
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        /**
+         * 3.2. Создание DOM-элементов для рилсов (ИСПРАВЛЕННАЯ ЛОГИКА)
+         */
+        function createReelElements(reels) {
+            const fragment = document.createDocumentFragment();
+            const newReelElements = []; // Временный массив для новых элементов
+
+            // --- ЭТАП 1: Создаем HTML и добавляем в DOM ---
+            reels.forEach(reel => {
+                const reelElement = document.createElement('section');
+                reelElement.className = 'reel-item';
+                reelElement.dataset.videoId = reel.videoId; 
+                reelElement.id = `reel-${reel.id}`; // Уникальный ID для элемента
+
+                reelElement.innerHTML = `
+                    <div class="youtube-player-container">
+                        <!-- ID плеера должен быть уникальным! -->
+                        <div id="player-${reel.id}"></div>
+                    </div>
+                    <div class="error-message">Видео недоступно</div>
+                    <div class="reel-info-overlay">
+                        <div class="reel-author">
+                            <img src="${reel.avatar}" alt="avatar">
+                            <span>@${reel.author}</span>
+                        </div>
+                        <div class="reel-description">${reel.desc}</div>
+                    </div>
+                    <div class="reel-actions">
+                        <button class="reel-action-btn" data-action="like">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>
+                            <span>${reel.likes}</span>
+                        </button>
+                        <button class="reel-action-btn" data-action="comment">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18zM18 14H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"></path></svg>
+                            <span>${reel.comments}</span>
+                        </button>
+                        <button class="reel-action-btn" data-action="share">
+                            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 8.81C7.5 8.31 6.79 8 6 8c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.23-.09.46-.09.7 0 1.66 1.34 3 3 3s3-1.34 3-3-1.34-3-3-3z"></path></svg>
+                            <span>${reel.shares}</span>
+                        </button>
+                    </div>
+                `;
+                
+                reelElement.player = null; // Заполним на этапе 2
+                reelElement.isPlayerReady = false; 
+                fragment.appendChild(reelElement);
+                newReelElements.push(reelElement); // Сохраняем для этапа 2
+            });
+            
+            reelContainer.appendChild(fragment);
+
+            // --- ЭТАП 2: Теперь, когда элементы в DOM, создаем плееры и следим за ними ---
+            newReelElements.forEach(reelElement => {
+                createPlayer(reelElement);
+                observer.observe(reelElement); // Начинаем следить за элементом
+            });
+        }
+
+
+        /**
+         * 3.3. Создание экземпляра плеера YouTube
+         */
+        function createPlayer(reelElement) {
+            const videoId = reelElement.dataset.videoId;
+            const playerId = `player-${reelElement.id.split('-')[1]}`; // Берем ID из reelElement.id
+            console.log(`Creating player for: ${videoId} (playerId: ${playerId})`);
+
+            // Убедимся, что контейнер плеера существует
+            const playerContainer = reelElement.querySelector(`#${playerId}`);
+            if (!playerContainer) {
+                console.error(`Не найден контейнер #${playerId} для плеера!`);
+                return;
+            }
+
+            const player = new YT.Player(playerId, { // Используем ID контейнера
+                videoId: videoId,
+                width: '100%',
+                height: '100%',
+                playerVars: {
+                    'autoplay': 0, 
+                    'controls': 0, 
+                    'rel': 0, 
+                    'showinfo': 0, 
+                    'mute': 1, 
+                    'loop': 1, 
+                    'playlist': videoId 
+                },
+                events: {
+                    'onReady': (event) => onPlayerReady(event, reelElement),
+                    'onError': (event) => onPlayerError(event, reelElement)
+                }
+            });
+            
+            reelElement.player = player;
+        }
+
+        /**
+         * 3.4. Cобытие: Плеер готов (onReady)
+         */
+        function onPlayerReady(event, reelElement) {
+            console.log(`Player ready: ${reelElement.dataset.videoId}`);
+            
+            reelElement.isPlayerReady = true;
+            event.target.mute();
+            
+            const iframe = event.target.getIframe();
+            if (iframe) {
+                iframe.classList.add('youtube-player-iframe');
+            }
+            
+            if (currentPlayingReel === reelElement) {
+                console.log(`Playing ${reelElement.dataset.videoId} from onReady`);
+                event.target.playVideo();
+            }
+        }
+        
+        /**
+         * 3.5. Cобытие: Ошибка плеера (onError)
+         */
+        function onPlayerError(event, reelElement) {
+            console.error(`Player Error: ${reelElement.dataset.videoId}. Code: ${event.data}`);
+            reelElement.classList.add('has-error');
+            
+            if (currentPlayingReel === reelElement) {
+                console.warn("Ошибка на текущем рилсе, пытаемся проскроллить...");
+                const nextReel = reelElement.nextElementSibling;
+                if (nextReel) {
+                    nextReel.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+        }
+
+        // --- 4. Логика прокрутки и воспроизведения ---
+
+        /**
+         * 4.1. Обработка логики "прилипания" и автозапуска
+         */
+        function handleScrollPlay(reelElement) {
+            if (currentPlayingReel === reelElement) {
+                return;
+            }
+
+            if (currentPlayingReel && currentPlayingReel.player && currentPlayingReel.isPlayerReady) {
+                try {
+                    currentPlayingReel.player.pauseVideo();
+                    currentPlayingReel.player.seekTo(0);
+                } catch (e) {
+                    console.warn("Не удалось остановить предыдущий плеер:", e.message);
+                }
+            }
+
+            currentPlayingReel = reelElement;
+            const videoId = currentPlayingReel.dataset.videoId;
+
+            if (currentPlayingReel.player && currentPlayingReel.isPlayerReady) {
+                console.log(`Playing ${videoId} from handleScrollPlay`);
+                currentPlayingReel.player.playVideo();
+            } else {
+                console.warn(`Хотим запустить ${videoId}, но плеер не готов. Запустится из onReady.`);
+            }
+        }
+
+        /**
+         * 4.2. Обработка "бесконечной прокрутки"
+         */
+        function checkLoadMore(reelElement) {
+            const isLastElement = !reelElement.nextElementSibling;
+            const isPenultimateElement = reelElement.nextElementSibling && !reelElement.nextElementSibling.nextElementSibling;
+
+            if ((isLastElement || isPenultimateElement) && nextPageToken && !isLoading) {
+                fetchReelsFromBackend(nextPageToken);
+            }
+        }
+
+        /**
+         * 4.3. Настройка Intersection Observer
+         */
+        const observerOptions = {
+            root: reelContainer, 
+            rootMargin: '0px',
+            threshold: 0.7 
+        };
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const reelElement = entry.target;
+                    handleScrollPlay(reelElement);
+                    checkLoadMore(reelElement);
+                }
+            });
+        }, observerOptions);
+
+        // --- 5. Обработка кликов (Лайки, Комментарии, Пауза) ---
+
+        reelContainer.addEventListener('click', function(e) {
+            const reel = e.target.closest('.reel-item');
+            if (!reel) return;
+
+            // 5.1. Обработка кнопок
+            const button = e.target.closest('.reel-action-btn');
+            if (button) {
+                const action = button.dataset.action;
+                
+                if (action === 'like') {
+                    button.classList.toggle('active');
+                    hapticImpact('light'); 
+                }
+                
+                if (action === 'comment') {
+                    tg.showPopup({
+                        title: 'Комментарии',
+                        message: 'Функция комментариев в разработке!',
+                        buttons: [{ type: 'ok' }]
+                    });
+                }
+                
+                if (action === 'share') {
+                     tg.showPopup({
+                        title: 'Поделиться',
+                        message: 'Функция "Поделиться" в разработке!',
+                        buttons: [{ type: 'ok' }]
+                    });
+                }
+                return; 
+            }
+
+            // 5.2. Обработка клика по видео (Пауза/Воспроизведение)
+            if (reel.player && reel.isPlayerReady) {
+                const playerState = reel.player.getPlayerState();
+                if (playerState === YT.PlayerState.PLAYING) {
+                    reel.player.pauseVideo();
+                } else {
+                    reel.player.playVideo();
+                }
+            } else {
+                console.warn("Клик по видео проигнорирован: плеер еще не готов.");
+            }
+        });
+
+
+        // --- 6. Запуск приложения ---
+
+        // Эта функция будет вызвана, когда YouTube API (шаг 2) загрузится
+        function onYouTubeIframeAPIReady() {
+            console.log("YouTube API Ready. Загружаем первые рилсы...");
+            // Загружаем первую пачку рилсов
+            fetchReelsFromBackend(null);
+        }
+
+    </script>
+</body>
+</html>
