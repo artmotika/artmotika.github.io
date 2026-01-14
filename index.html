@@ -1,4 +1,10 @@
 <div>
+    <div id="user-info" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc; display: none;">
+        <h3>Данные пользователя:</h3>
+        <pre id="user-data"></pre>
+        <img id="user-avatar" src="" alt="Avatar" style="border-radius: 50%; width: 100px;">
+    </div>
+
     <script nonce="csp_nonce" src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
     <script nonce="csp_nonce" type="text/javascript">
         if ('VKIDSDK' in window) {
@@ -9,7 +15,7 @@
             redirectUrl: 'https://artmotika.github.io/',
             responseMode: VKID.ConfigResponseMode.Callback,
             source: VKID.ConfigSource.LOWCODE,
-            scope: '', // Заполните нужными доступами по необходимости
+            scope: '', // Добавьте 'email', если нужен email пользователя
           });
 
           const oneTap = new VKID.OneTap();
@@ -23,17 +29,49 @@
             const code = payload.code;
             const deviceId = payload.device_id;
 
+            // Обмениваем код на токен
             VKID.Auth.exchangeCode(code, deviceId)
               .then(vkidOnSuccess)
               .catch(vkidOnError);
           });
 
           function vkidOnSuccess(data) {
-            // Обработка полученного результата
+            console.log('Token data:', data);
+
+            // 1. Получаем информацию о пользователе, используя access_token
+            VKID.Auth.userInfo(data.access_token)
+              .then((user) => {
+                console.log('User info:', user);
+                displayUser(user, data.access_token);
+              })
+              .catch(vkidOnError);
           }
 
           function vkidOnError(error) {
-            // Обработка ошибки
+            console.error('Ошибка:', error);
+            alert('Произошла ошибка при авторизации. Проверьте консоль.');
+          }
+
+          // Функция для отображения данных на странице
+          function displayUser(user, token) {
+            const container = document.getElementById('user-info');
+            const dataField = document.getElementById('user-data');
+            const avatar = document.getElementById('user-avatar');
+
+            container.style.display = 'block';
+
+            // Выводим основные данные
+            dataField.textContent = JSON.stringify({
+                first_name: user.first_name,
+                last_name: user.last_name,
+                user_id: user.user_id,
+                access_token: token // Будьте осторожны с показом токена в реальных проектах!
+            }, null, 2);
+
+            // Если есть фото
+            if (user.avatar) {
+                avatar.src = user.avatar;
+            }
           }
         }
     </script>
