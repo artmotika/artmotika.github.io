@@ -124,7 +124,7 @@
                 code: code,
                 code_verifier: codeVerifier,
                 client_id: CLIENT_ID,
-                device_id: deviceId, // Должен быть 1-в-1 как в первом запросе
+                device_id: getDeviceId(), // Должен быть 1-в-1 как в первом запросе
                 redirect_uri: REDIRECT_URI
             });
 
