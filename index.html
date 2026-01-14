@@ -15,7 +15,7 @@
             redirectUrl: 'https://artmotika.github.io/',
             responseMode: VKID.ConfigResponseMode.Callback,
             source: VKID.ConfigSource.LOWCODE,
-            scope: '', // Добавьте 'email', если нужен email пользователя
+            scope: 'email, phone, vkid.personal_info',
           });
 
           const oneTap = new VKID.OneTap();
