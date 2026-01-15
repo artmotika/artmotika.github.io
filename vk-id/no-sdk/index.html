@@ -32,8 +32,7 @@
 
 <script>
     const APP_ID = '54421608';
-    const REDIRECT_URI = 'https://artmotika.github.io/1.html';
-    const REDIRECT_URI2 = 'https://artmotika.github.io';
+    const REDIRECT_URI = 'https://artmotika.github.io/';
     const logEl = document.getElementById('log');
 
     function print(msg) {
@@ -101,7 +100,7 @@
                     code_verifier: verifier,
                     client_id: APP_ID,
                     device_id: deviceId,
-                    redirect_uri: REDIRECT_URI2
+                    redirect_uri: REDIRECT_URI
                 })
             });
 
