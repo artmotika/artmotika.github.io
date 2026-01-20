@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>OAuth2 Backend Simulator & Data Viewer</title>
+    <title>OAuth2 Backend Simulator: Full Cycle</title>
     <style>
         :root { --vk: #0077ff; --mail: #005ff9; --ya: #ffcc00; --bg: #f0f2f5; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: #333; }
@@ -10,18 +10,19 @@
 
         .btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
         button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-vk { background: var(--vk); }
         .btn-mail { background: var(--mail); }
         .btn-ya { background: var(--ya); color: black; }
+        .btn-revoke { background: #ff4d4d; color: white; margin-top: 15px; width: 100%; }
 
         /* User Card */
-        #user-card { display: none; margin-top: 20px; border: 1px solid #ddd; border-radius: 12px; overflow: hidden; }
+        #user-card { display: none; margin-top: 20px; border: 1px solid #ddd; border-radius: 12px; overflow: hidden; background: #fff; }
         .user-header { display: flex; align-items: center; padding: 20px; background: #fafafa; border-bottom: 1px solid #eee; }
         .user-header img { width: 70px; height: 70px; border-radius: 50%; margin-right: 20px; background: #eee; }
-        .user-header h3 { margin: 0; }
 
         /* Console Log */
-        #console { background: #1c1e21; color: #a5ff90; padding: 15px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 12px; height: 250px; overflow-y: auto; margin-top: 20px; line-height: 1.5; }
+        #console { background: #1c1e21; color: #a5ff90; padding: 15px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 12px; height: 300px; overflow-y: auto; margin-top: 20px; line-height: 1.5; }
         .step { color: #00d4ff; font-weight: bold; margin-top: 10px; border-left: 3px solid #00d4ff; padding-left: 10px; }
         .data-label { color: #ffcc00; }
         pre { background: #f4f4f4; padding: 10px; border-radius: 6px; font-size: 12px; overflow-x: auto; color: #333; }
@@ -30,8 +31,8 @@
 <body>
 
 <div class="container">
-    <h2>OAuth2 Backend Simulator</h2>
-    <p>Скрипт имитирует логику <b>ExternalAuthServlet</b> и отображает результат.</p>
+    <h2>OAuth2 Backend Simulator (Full Cycle)</h2>
+    <p>Имитация <b>ExternalAuthServlet</b>: Авторизация -> Данные -> Отзыв токена.</p>
 
     <div class="btn-group">
         <button class="btn-vk" onclick="initAuth('vk')">VK ID</button>
@@ -51,14 +52,15 @@
         <div style="padding: 20px;">
             <label style="font-weight:bold; font-size:12px;">RAW USER INFO (JSON):</label>
             <pre id="u-json"></pre>
+            <button class="btn-revoke" id="btn-revoke-action" onclick="revokeToken()">Выполнить revokeToken()</button>
         </div>
     </div>
 
-    <div id="console">Готов к имитации...</div>
+    <div id="console">Система готова...</div>
 </div>
 
 <script>
-    // КОНФИГУРАЦИЯ (как в вашем application.yaml)
+    // КОНФИГУРАЦИЯ
     const CONFIG = {
         vk: { cid: "54421608" },
         yandex: { cid: "a3624cdac0b24aff84bbebe83cbce9a1", secret: "7a8c08ce79db45658443307c8d3ee24f" },
@@ -74,29 +76,22 @@
         logEl.scrollTop = logEl.scrollHeight;
     }
 
-    // --- ИМИТАЦИЯ SecurityUtils ---
     async function generatePKCE() {
         const verifier = Array.from(crypto.getRandomValues(new Uint8Array(64)))
             .map(b => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"[b % 62]).join('');
         const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
-        const challenge = btoa(String.fromCharCode(...new Uint8Array(hash)))
-            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const challenge = btoa(String.fromCharCode(...new Uint8Array(hash))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
         return { verifier, challenge };
     }
 
-    // --- ШАГ 1: handleInit (Бэкенд генерирует URL) ---
+    // --- ШАГ 1: Инициация (handleInit) ---
     async function initAuth(provider) {
         log(`ШАГ 1: handleInit (${provider})`, true);
         const pkce = await generatePKCE();
         const state = Math.random().toString(36).substring(2, 15);
-        const deviceId = crypto.randomUUID(); // Генерируем UUID как в вашем Java-коде
+        const deviceId = crypto.randomUUID();
 
-        // Сохраняем "в БД" (sessionStorage)
-        const session = { provider, verifier: pkce.verifier, state, deviceId };
-        sessionStorage.setItem('auth_db_session', JSON.stringify(session));
-
-        log(`<span class="data-label">Generated Verifier:</span> ${pkce.verifier.substring(0, 15)}...`);
-        log(`<span class="data-label">Generated DeviceID:</span> ${deviceId}`);
+        sessionStorage.setItem('auth_db_session', JSON.stringify({ provider, verifier: pkce.verifier, state, deviceId }));
 
         let url = "";
         if (provider === 'vk' || provider === 'mail_ru') {
@@ -105,11 +100,11 @@
             url = `https://oauth.yandex.ru/authorize?response_type=code&client_id=${CONFIG.yandex.cid}&redirect_uri=${encodeURIComponent(CONFIG.redirectUri)}&state=${state}&code_challenge=${pkce.challenge}&code_challenge_method=S256&device_id=${deviceId}`;
         }
 
-        log(`Редирект на: <small>${url}</small>`);
-        setTimeout(() => window.location.href = url, 1000);
+        log(`Редирект: <small>${url}</small>`);
+        setTimeout(() => window.location.href = url, 800);
     }
 
-    // --- ШАГ 2: handleExchange (Бэкенд меняет код на данные) ---
+    // --- ШАГ 2: Обмен (handleExchange) ---
     async function processCallback() {
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
@@ -121,24 +116,17 @@
         log(`ШАГ 2: handleExchange (${session.provider})`, true);
         window.history.replaceState({}, document.title, window.location.pathname);
 
-        // ЛОГИКА DEVICE_ID СОГЛАСНО ВАШЕМУ ТРЕБОВАНИЮ:
-        let deviceIdToUse = session.deviceId; // По умолчанию из сессии (для Яндекс)
+        let deviceIdToUse = session.deviceId;
         const deviceIdFromRedirect = params.get('device_id');
-
         if ((session.provider === 'vk' || session.provider === 'mail_ru') && deviceIdFromRedirect) {
             deviceIdToUse = deviceIdFromRedirect;
-            log(`<span class="data-label">DeviceID:</span> Взято из REDIRECT URL (как просили для VK) -> ${deviceIdToUse}`);
-        } else {
-            log(`<span class="data-label">DeviceID:</span> Взято из SESSION DB (как просили для Yandex) -> ${deviceIdToUse}`);
+            log(`DeviceID взят из Redirect URL: ${deviceIdToUse}`);
         }
 
         try {
-            log(`Запрос токена (имитация POST запроса бэкенда)...`);
-            let userResult;
-
+            let tokenData, userResult;
             if (session.provider === 'vk' || session.provider === 'mail_ru') {
-                // Имитация VkAuthProvider.exchangeCode
-                const tokenRes = await fetch('https://id.vk.com/oauth2/auth', {
+                const res = await fetch('https://id.vk.com/oauth2/auth', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: new URLSearchParams({
@@ -147,19 +135,15 @@
                         provider: session.provider === 'vk' ? 'vkid' : 'mail_ru'
                     })
                 });
-                const tokenData = await tokenRes.json();
-
-                log(`Токен получен. Запрос UserInfo...`);
+                tokenData = await res.json();
                 const infoRes = await fetch('https://id.vk.com/oauth2/user_info', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: new URLSearchParams({ access_token: tokenData.access_token, client_id: CONFIG.vk.cid })
                 });
                 userResult = await infoRes.json();
-                displayUser(userResult, 'vk');
             } else {
-                // Имитация YandexAuthProvider.exchangeCode
-                const tokenRes = await fetch('https://oauth.yandex.ru/token', {
+                const res = await fetch('https://oauth.yandex.ru/token', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: new URLSearchParams({
@@ -167,42 +151,80 @@
                         client_id: CONFIG.yandex.cid, client_secret: CONFIG.yandex.secret, device_id: deviceIdToUse
                     })
                 });
-                const tokenData = await tokenRes.json();
-
-                log(`Токен получен. Запрос UserInfo...`);
+                tokenData = await res.json();
                 const infoRes = await fetch('https://login.yandex.ru/info?format=json', {
                     headers: { 'Authorization': `OAuth ${tokenData.access_token}` }
                 });
                 userResult = await infoRes.json();
-                displayUser(userResult, 'yandex');
             }
+
+            // Сохраняем токен для логаута
+            session.accessToken = tokenData.access_token;
+            sessionStorage.setItem('auth_db_session', JSON.stringify(session));
+
+            displayUser(userResult, session.provider === 'yandex' ? 'yandex' : 'vk');
         } catch (e) {
-            log(`ОШИБКА CORS: Провайдеры блокируют запросы с фронтенда. <br>Это доказывает, что этот код ДОЛЖЕН работать на Java-бэкенде.`, true);
-            console.error(e);
+            log(`Ошибка CORS: Провайдеры блокируют запросы с фронтенда. Проверьте параметры в консоли разработчика.`, true);
         }
     }
 
-    // --- ВИЗУАЛИЗАЦИЯ ДАННЫХ ---
+    // --- ШАГ 3: Отзыв (revokeToken) ---
+    async function revokeToken() {
+        const session = JSON.parse(sessionStorage.getItem('auth_db_session'));
+        if (!session || !session.accessToken) return;
+
+        log(`ШАГ 3: revokeToken (${session.provider})`, true);
+        const btn = document.getElementById('btn-revoke-action');
+        btn.disabled = true;
+
+        try {
+            if (session.provider === 'vk' || session.provider === 'mail_ru') {
+                // Имитация StringBuilder из VkAuthProvider.revokeToken
+                const url = "https://id.vk.ru/oauth2/logout";
+                const body = `client_id=${CONFIG.vk.cid}&access_token=${session.accessToken}&provider=${session.provider === 'vk' ? 'vkid' : 'mail_ru'}`;
+
+                log(`<span class="data-label">POST</span> ${url}`);
+                log(`<span class="data-label">Body (StringBuilder):</span> ${body}`);
+
+                await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body
+                });
+            } else {
+                // Имитация StringBuilder из YandexAuthProvider.revokeToken
+                const url = "https://oauth.yandex.ru/revoke_token";
+                const body = `access_token=${session.accessToken}&client_id=${CONFIG.yandex.cid}&client_secret=${CONFIG.yandex.secret}`;
+
+                log(`<span class="data-label">POST</span> ${url}`);
+                log(`<span class="data-label">Body (StringBuilder):</span> ${body}`);
+
+                await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body
+                });
+            }
+            log("Запрос на отозыв отправлен (проверьте Network в DevTools).", true);
+        } catch (e) {
+            log("Запрос отправлен. CORS может блокировать ответ, но бэкенд отработал бы штатно.", true);
+        }
+    }
+
     function displayUser(data, provider) {
         document.getElementById('user-card').style.display = 'block';
-        const card = document.getElementById('user-card');
-
         if (provider === 'vk') {
             const u = data.user;
             document.getElementById('u-avatar').src = u.avatar;
             document.getElementById('u-name').innerText = `${u.first_name} ${u.last_name}`;
             document.getElementById('u-id').innerText = `VK ID: ${u.user_id}`;
-            document.getElementById('u-email').innerText = u.email || "Email скрыт";
         } else {
-            const u = data;
-            document.getElementById('u-avatar').src = `https://avatars.yandex.net/get-yapic/${u.default_avatar_id}/islands-200`;
-            document.getElementById('u-name').innerText = u.real_name || u.display_name;
-            document.getElementById('u-id').innerText = `Yandex ID: ${u.id}`;
-            document.getElementById('u-email').innerText = u.default_email || "Email скрыт";
+            document.getElementById('u-avatar').src = `https://avatars.yandex.net/get-yapic/${data.default_avatar_id}/islands-200`;
+            document.getElementById('u-name').innerText = data.real_name || data.display_name;
+            document.getElementById('u-id').innerText = `Yandex ID: ${data.id}`;
         }
-
         document.getElementById('u-json').innerText = JSON.stringify(data, null, 2);
-        log("ДАННЫЕ ПОЛУЧЕНЫ УСПЕШНО", true);
+        log("ДАННЫЕ ОТОБРАЖЕНЫ. Теперь доступен revokeToken.", true);
     }
 
     window.onload = processCallback;
