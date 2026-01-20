@@ -2,77 +2,80 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>OAuth2 Data Visualizer</title>
+    <title>OAuth2 Backend Simulator & Data Viewer</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .card { background: white; width: 100%; max-width: 800px; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        :root { --vk: #0077ff; --mail: #005ff9; --ya: #ffcc00; --bg: #f0f2f5; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 25px rgba(0,0,0,0.1); }
 
-        /* Кнопки провайдеров */
-        .btn-group { display: flex; gap: 10px; margin: 20px 0; }
-        button { flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
-        .btn-vk { background: #0077ff; }
-        .btn-mail { background: #005ff9; }
-        .btn-yandex { background: #ffcc00; color: black; }
+        .btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-vk { background: var(--vk); }
+        .btn-mail { background: var(--mail); }
+        .btn-ya { background: var(--ya); color: black; }
 
-        /* Карточка пользователя */
-        .user-view { display: none; margin-top: 20px; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; background: #fff; }
-        .user-header { display: flex; align-items: center; padding: 20px; background: #f8f9fa; border-bottom: 1px solid #eee; }
-        .user-header img { width: 80px; height: 80px; border-radius: 50%; margin-right: 20px; border: 3px solid #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .user-info h3 { margin: 0; font-size: 20px; color: #1c1e21; }
-        .user-info p { margin: 5px 0 0; color: #65676b; font-size: 14px; }
+        /* User Card */
+        #user-card { display: none; margin-top: 20px; border: 1px solid #ddd; border-radius: 12px; overflow: hidden; }
+        .user-header { display: flex; align-items: center; padding: 20px; background: #fafafa; border-bottom: 1px solid #eee; }
+        .user-header img { width: 70px; height: 70px; border-radius: 50%; margin-right: 20px; background: #eee; }
+        .user-header h3 { margin: 0; }
 
-        .raw-data { padding: 20px; }
-        .raw-data label { font-weight: bold; font-size: 12px; color: #888; text-transform: uppercase; }
-        pre { background: #282c34; color: #abb2bf; padding: 15px; border-radius: 8px; font-size: 13px; overflow-x: auto; margin-top: 10px; }
-
-        #console { background: #1c1c1c; color: #00ff00; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 12px; height: 150px; overflow-y: auto; margin-top: 20px; }
+        /* Console Log */
+        #console { background: #1c1e21; color: #a5ff90; padding: 15px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 12px; height: 250px; overflow-y: auto; margin-top: 20px; line-height: 1.5; }
+        .step { color: #00d4ff; font-weight: bold; margin-top: 10px; border-left: 3px solid #00d4ff; padding-left: 10px; }
+        .data-label { color: #ffcc00; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 6px; font-size: 12px; overflow-x: auto; color: #333; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>Тестер получения данных (Frontend-to-Provider)</h2>
+<div class="container">
+    <h2>OAuth2 Backend Simulator</h2>
+    <p>Скрипт имитирует логику <b>ExternalAuthServlet</b> и отображает результат.</p>
 
     <div class="btn-group">
-        <button class="btn-vk" onclick="start('vk', 'vkid')">VK ID</button>
-        <button class="btn-mail" onclick="start('vk', 'mail_ru')">Mail.ru</button>
-        <button class="btn-yandex" onclick="start('yandex')">Яндекс</button>
+        <button class="btn-vk" onclick="initAuth('vk')">VK ID</button>
+        <button class="btn-mail" onclick="initAuth('mail_ru')">Mail.ru</button>
+        <button class="btn-ya" onclick="initAuth('yandex')">Yandex</button>
     </div>
 
-    <div id="user-view" class="user-view">
+    <div id="user-card">
         <div class="user-header">
-            <img id="u-avatar" src="" alt="Avatar">
-            <div class="user-info">
-                <h3 id="u-name">Имя Фамилия</h3>
-                <p id="u-id">ID: 000000</p>
-                <p id="u-email">email@example.com</p>
+            <img id="u-avatar" src="" alt="">
+            <div>
+                <h3 id="u-name">Name</h3>
+                <p id="u-id" style="margin:5px 0; color:#666; font-size:14px;"></p>
+                <p id="u-email" style="margin:0; font-size:14px;"></p>
             </div>
         </div>
-        <div class="raw-data">
-            <label>Полный ответ от провайдера (UserInfo JSON):</label>
+        <div style="padding: 20px;">
+            <label style="font-weight:bold; font-size:12px;">RAW USER INFO (JSON):</label>
             <pre id="u-json"></pre>
         </div>
     </div>
 
-    <div id="console">Ожидание авторизации...</div>
+    <div id="console">Готов к имитации...</div>
 </div>
 
 <script>
-    const CLIENT_ID_VK = "54421608";
-    const CLIENT_ID_YA = "a3624cdac0b24aff84bbebe83cbce9a1";
-    const CLIENT_SEC_YA = "7a8c08ce79db45658443307c8d3ee24f";
-    const REDIRECT_URI = window.location.origin + window.location.pathname;
+    // КОНФИГУРАЦИЯ (как в вашем application.yaml)
+    const CONFIG = {
+        vk: { cid: "54421608" },
+        yandex: { cid: "a3624cdac0b24aff84bbebe83cbce9a1", secret: "7a8c08ce79db45658443307c8d3ee24f" },
+        redirectUri: window.location.origin + window.location.pathname
+    };
 
-    function log(msg) {
+    const logEl = document.getElementById('console');
+    function log(msg, isStep = false) {
         const div = document.createElement('div');
-        div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        const c = document.getElementById('console');
-        c.appendChild(div);
-        c.scrollTop = c.scrollHeight;
+        if (isStep) div.className = 'step';
+        div.innerHTML = msg;
+        logEl.appendChild(div);
+        logEl.scrollTop = logEl.scrollHeight;
     }
 
-    // --- КРИПТО (PKCE) ---
-    async function getPKCE() {
+    // --- ИМИТАЦИЯ SecurityUtils ---
+    async function generatePKCE() {
         const verifier = Array.from(crypto.getRandomValues(new Uint8Array(64)))
             .map(b => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"[b % 62]).join('');
         const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
@@ -81,102 +84,128 @@
         return { verifier, challenge };
     }
 
-    // --- ШАГ 1: Redirect ---
-    async function start(type, provider) {
-        const pkce = await getPKCE();
+    // --- ШАГ 1: handleInit (Бэкенд генерирует URL) ---
+    async function initAuth(provider) {
+        log(`ШАГ 1: handleInit (${provider})`, true);
+        const pkce = await generatePKCE();
         const state = Math.random().toString(36).substring(2, 15);
-        const deviceId = crypto.randomUUID();
+        const deviceId = crypto.randomUUID(); // Генерируем UUID как в вашем Java-коде
 
-        sessionStorage.setItem('auth_session', JSON.stringify({ type, provider, verifier: pkce.verifier, state, deviceId }));
+        // Сохраняем "в БД" (sessionStorage)
+        const session = { provider, verifier: pkce.verifier, state, deviceId };
+        sessionStorage.setItem('auth_db_session', JSON.stringify(session));
 
-        let url = type === 'vk'
-            ? `https://id.vk.com/authorize?response_type=code&client_id=${CLIENT_ID_VK}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&code_challenge=${pkce.challenge}&code_challenge_method=s256&scope=phone email vkid.personal_info&provider=${provider}`
-            : `https://oauth.yandex.ru/authorize?response_type=code&client_id=${CLIENT_ID_YA}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&code_challenge=${pkce.challenge}&code_challenge_method=S256&device_id=${deviceId}`;
+        log(`<span class="data-label">Generated Verifier:</span> ${pkce.verifier.substring(0, 15)}...`);
+        log(`<span class="data-label">Generated DeviceID:</span> ${deviceId}`);
 
-        log(`Перенаправление на ${type}...`);
-        window.location.href = url;
+        let url = "";
+        if (provider === 'vk' || provider === 'mail_ru') {
+            url = `https://id.vk.com/authorize?response_type=code&client_id=${CONFIG.vk.cid}&redirect_uri=${encodeURIComponent(CONFIG.redirectUri)}&state=${state}&code_challenge=${pkce.challenge}&code_challenge_method=s256&scope=phone email vkid.personal_info&provider=${provider === 'vk' ? 'vkid' : 'mail_ru'}`;
+        } else {
+            url = `https://oauth.yandex.ru/authorize?response_type=code&client_id=${CONFIG.yandex.cid}&redirect_uri=${encodeURIComponent(CONFIG.redirectUri)}&state=${state}&code_challenge=${pkce.challenge}&code_challenge_method=S256&device_id=${deviceId}`;
+        }
+
+        log(`Редирект на: <small>${url}</small>`);
+        setTimeout(() => window.location.href = url, 1000);
     }
 
-    // --- ШАГ 2 & 3: Exchange & Render ---
-    async function checkCallback() {
+    // --- ШАГ 2: handleExchange (Бэкенд меняет код на данные) ---
+    async function processCallback() {
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
         const state = params.get('state');
-        const session = JSON.parse(sessionStorage.getItem('auth_session'));
+        const session = JSON.parse(sessionStorage.getItem('auth_db_session'));
 
         if (!code || !session || state !== session.state) return;
 
-        log("Код получен. Обмениваем на данные...");
+        log(`ШАГ 2: handleExchange (${session.provider})`, true);
         window.history.replaceState({}, document.title, window.location.pathname);
 
+        // ЛОГИКА DEVICE_ID СОГЛАСНО ВАШЕМУ ТРЕБОВАНИЮ:
+        let deviceIdToUse = session.deviceId; // По умолчанию из сессии (для Яндекс)
+        const deviceIdFromRedirect = params.get('device_id');
+
+        if ((session.provider === 'vk' || session.provider === 'mail_ru') && deviceIdFromRedirect) {
+            deviceIdToUse = deviceIdFromRedirect;
+            log(`<span class="data-label">DeviceID:</span> Взято из REDIRECT URL (как просили для VK) -> ${deviceIdToUse}`);
+        } else {
+            log(`<span class="data-label">DeviceID:</span> Взято из SESSION DB (как просили для Yandex) -> ${deviceIdToUse}`);
+        }
+
         try {
-            let userJson;
-            if (session.type === 'vk') {
-                // Обмен VK (имитация бэкенда)
+            log(`Запрос токена (имитация POST запроса бэкенда)...`);
+            let userResult;
+
+            if (session.provider === 'vk' || session.provider === 'mail_ru') {
+                // Имитация VkAuthProvider.exchangeCode
                 const tokenRes = await fetch('https://id.vk.com/oauth2/auth', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: new URLSearchParams({
                         grant_type: 'authorization_code', code, code_verifier: session.verifier,
-                        client_id: CLIENT_ID_VK, device_id: session.deviceId, redirect_uri: REDIRECT_URI, provider: session.provider
+                        client_id: CONFIG.vk.cid, device_id: deviceIdToUse, redirect_uri: CONFIG.redirectUri,
+                        provider: session.provider === 'vk' ? 'vkid' : 'mail_ru'
                     })
                 });
                 const tokenData = await tokenRes.json();
 
-                // Получение инфо VK
+                log(`Токен получен. Запрос UserInfo...`);
                 const infoRes = await fetch('https://id.vk.com/oauth2/user_info', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({ access_token: tokenData.access_token, client_id: CLIENT_ID_VK })
+                    body: new URLSearchParams({ access_token: tokenData.access_token, client_id: CONFIG.vk.cid })
                 });
-                userJson = await infoRes.json();
-                renderVK(userJson);
+                userResult = await infoRes.json();
+                displayUser(userResult, 'vk');
             } else {
-                // Обмен Яндекс
+                // Имитация YandexAuthProvider.exchangeCode
                 const tokenRes = await fetch('https://oauth.yandex.ru/token', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: new URLSearchParams({
                         grant_type: 'authorization_code', code, code_verifier: session.verifier,
-                        client_id: CLIENT_ID_YA, client_secret: CLIENT_SEC_YA, device_id: session.deviceId
+                        client_id: CONFIG.yandex.cid, client_secret: CONFIG.yandex.secret, device_id: deviceIdToUse
                     })
                 });
                 const tokenData = await tokenRes.json();
 
-                // Получение инфо Яндекс
+                log(`Токен получен. Запрос UserInfo...`);
                 const infoRes = await fetch('https://login.yandex.ru/info?format=json', {
                     headers: { 'Authorization': `OAuth ${tokenData.access_token}` }
                 });
-                userJson = await infoRes.json();
-                renderYandex(userJson);
+                userResult = await infoRes.json();
+                displayUser(userResult, 'yandex');
             }
         } catch (e) {
-            log("Ошибка CORS или Сети. Это подтверждает, что обмен должен делать Java-бэкенд!");
+            log(`ОШИБКА CORS: Провайдеры блокируют запросы с фронтенда. <br>Это доказывает, что этот код ДОЛЖЕН работать на Java-бэкенде.`, true);
+            console.error(e);
         }
     }
 
-    function renderVK(data) {
-        const u = data.user;
-        document.getElementById('user-view').style.display = 'block';
-        document.getElementById('u-avatar').src = u.avatar;
-        document.getElementById('u-name').innerText = `${u.first_name} ${u.last_name}`;
-        document.getElementById('u-id').innerText = `VK ID: ${u.user_id}`;
-        document.getElementById('u-email').innerText = u.email || "Email не предоставлен";
+    // --- ВИЗУАЛИЗАЦИЯ ДАННЫХ ---
+    function displayUser(data, provider) {
+        document.getElementById('user-card').style.display = 'block';
+        const card = document.getElementById('user-card');
+
+        if (provider === 'vk') {
+            const u = data.user;
+            document.getElementById('u-avatar').src = u.avatar;
+            document.getElementById('u-name').innerText = `${u.first_name} ${u.last_name}`;
+            document.getElementById('u-id').innerText = `VK ID: ${u.user_id}`;
+            document.getElementById('u-email').innerText = u.email || "Email скрыт";
+        } else {
+            const u = data;
+            document.getElementById('u-avatar').src = `https://avatars.yandex.net/get-yapic/${u.default_avatar_id}/islands-200`;
+            document.getElementById('u-name').innerText = u.real_name || u.display_name;
+            document.getElementById('u-id').innerText = `Yandex ID: ${u.id}`;
+            document.getElementById('u-email').innerText = u.default_email || "Email скрыт";
+        }
+
         document.getElementById('u-json').innerText = JSON.stringify(data, null, 2);
-        log("Данные VK отображены.");
+        log("ДАННЫЕ ПОЛУЧЕНЫ УСПЕШНО", true);
     }
 
-    function renderYandex(u) {
-        document.getElementById('user-view').style.display = 'block';
-        document.getElementById('u-avatar').src = `https://avatars.yandex.net/get-yapic/${u.default_avatar_id}/islands-200`;
-        document.getElementById('u-name').innerText = u.real_name || u.display_name;
-        document.getElementById('u-id').innerText = `Yandex ID: ${u.id}`;
-        document.getElementById('u-email').innerText = u.default_email || "Email не указан";
-        document.getElementById('u-json').innerText = JSON.stringify(u, null, 2);
-        log("Данные Яндекс отображены.");
-    }
-
-    window.onload = checkCallback;
+    window.onload = processCallback;
 </script>
 
 </body>
