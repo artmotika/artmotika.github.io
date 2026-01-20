@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>OAuth2 API Explorer (Backend Driven)</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; background: #f0f2f5; color: #333; }
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 600px; margin: 0 auto; }
+        .btn { background: #0077ff; color: white; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; text-decoration: none; font-weight: bold; width: 100%; font-size: 16px; margin-bottom: 10px; }
+        .btn:hover { background: #0066ee; }
+        .btn-secondary { background: #4caf50; }
+        #log { text-align: left; background: #222; color: #00ff00; padding: 15px; border-radius: 8px; margin-top: 20px; font-size: 11px; white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
+
+        .result-card { text-align: left; background: #fff; border: 1px solid #e7e8ec; border-radius: 12px; margin-top: 20px; padding: 20px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 8px; font-size: 13px; overflow-x: auto; border: 1px solid #ddd; word-break: break-all; white-space: pre-wrap; }
+        .error-msg { color: #d32f2f; background: #ffebee; padding: 10px; border-radius: 5px; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>External Auth (Backend Integration)</h2>
+    <div id="ui-box">
+        <button id="login-vk" class="btn">Войти через VK ID</button>
+        <button id="login-yandex" class="btn btn-secondary">Войти через Яндекс</button>
+    </div>
+
+    <div id="error-banner" class="error-msg"></div>
+    <div id="log">Ожидание действий...</div>
+
+    <div id="result-ui" style="display: none;">
+        <div class="result-card">
+            <h3 style="margin-top:0">Авторизация успешна!</h3>
+            <p><strong>Получен auth_data (Encrypted JSON):</strong></p>
+            <pre id="auth-data-box"></pre>
+            <button onclick="location.href=window.location.pathname" class="btn" style="background:#888">Сбросить</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- КОНФИГУРАЦИЯ БЭКЕНДА ---
+    const API_BASE = 'https://app.dubrovsky.ru/api/be/v1/auth/external';
+    const logEl = document.getElementById('log');
+    const errorBanner = document.getElementById('error-banner');
+
+    function print(msg) {
+        const t = new Date().toLocaleTimeString();
+        logEl.innerText += `\n[${t}] ${msg}`;
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function showError(text) {
+        errorBanner.innerText = text;
+        errorBanner.style.display = 'block';
+        print("ОШИБКА: " + text);
+    }
+
+    // --- Утилита для Device ID ---
+    // Бэкенд генерирует свой UUID в init, но в exchange ожидает его в теле запроса.
+    // Сохраняем локально, чтобы сессия была консистентной.
+    function getPersistentDeviceId() {
+        let id = localStorage.getItem('auth_device_id');
+        if (!id) {
+            id = crypto.randomUUID();
+            localStorage.setItem('auth_device_id', id);
+        }
+        return id;
+    }
+
+    // --- ШАГ 1: ИНИЦИАЦИЯ (handleInit) ---
+    async function startAuth(provider) {
+        errorBanner.style.display = 'none';
+        print(`Инициация запроса для ${provider}...`);
+
+        try {
+            const response = await fetch(API_BASE, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    client: 'web',
+                    provider: provider
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error("Bad Request");
+            }
+
+            const data = await response.json();
+            // data = { "status": 0, "state": "...", "url": "..." }
+
+            if (data.url) {
+                print(`Получен URL. Редирект...`);
+                window.location.href = data.url;
+            }
+        } catch (e) {
+            showError("Это действие в данный момент недоступно, попробуйте позже");
+        }
+    }
+
+    // --- ШАГ 2: ОБМЕН (handleExchange) ---
+    async function handleRedirectCallback() {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        const state = params.get('state');
+
+        if (!code || !state) return;
+
+        print("Обнаружен callback. Выполняем обмен кода...");
+        document.getElementById('ui-box').style.display = 'none';
+
+        try {
+            const deviceId = getPersistentDeviceId();
+
+            // Вызов POST /external/{state}/
+            const response = await fetch(`${API_BASE}/${state}/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    code: code,
+                    deviceId: deviceId
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error("Exchange failed");
+            }
+
+            const data = await response.json();
+            // data = { "status": 0, "auth_data": "..." }
+
+            if (data.auth_data) {
+                print("Обмен завершен успешно!");
+                showResult(data.auth_data);
+            }
+        } catch (e) {
+            showError("Что-то пошло не так, попробуйте позже");
+        }
+    }
+
+    function showResult(authData) {
+        document.getElementById('result-ui').style.display = 'block';
+        document.getElementById('auth-data-box').innerText = authData;
+        // Очищаем URL от параметров
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // Слушатели кнопок
+    document.getElementById('login-vk').onclick = () => startAuth('vk');
+    document.getElementById('login-yandex').onclick = () => startAuth('yandex');
+
+    // Проверка при загрузке (не вернулись ли мы от провайдера?)
+    handleRedirectCallback();
+</script>
+
+</body>
+</html>
