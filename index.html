@@ -2,228 +2,181 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>OAuth2 API & Revoke Tester</title>
+    <title>OAuth2 Data Visualizer</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .card { background: white; width: 100%; max-width: 800px; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .config { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd; }
-        .config label { font-size: 12px; font-weight: bold; color: #555; }
-        .config input { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
 
-        .btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        /* Кнопки провайдеров */
+        .btn-group { display: flex; gap: 10px; margin: 20px 0; }
         button { flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
-        button:disabled { background: #ccc !important; color: #666; cursor: not-allowed; }
         .btn-vk { background: #0077ff; }
         .btn-mail { background: #005ff9; }
         .btn-yandex { background: #ffcc00; color: black; }
-        .btn-revoke { background: #ff4d4d; margin-top: 10px; }
 
-        #console { background: #1c1c1c; color: #00ff00; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 13px; height: 350px; overflow-y: auto; white-space: pre-wrap; }
-        .err { color: #ff5f5f; }
-        .req { color: #5fafff; }
-        .revoke-ui { display: none; margin-top: 20px; border-top: 2px dashed #ddd; padding-top: 15px; }
+        /* Карточка пользователя */
+        .user-view { display: none; margin-top: 20px; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; background: #fff; }
+        .user-header { display: flex; align-items: center; padding: 20px; background: #f8f9fa; border-bottom: 1px solid #eee; }
+        .user-header img { width: 80px; height: 80px; border-radius: 50%; margin-right: 20px; border: 3px solid #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .user-info h3 { margin: 0; font-size: 20px; color: #1c1e21; }
+        .user-info p { margin: 5px 0 0; color: #65676b; font-size: 14px; }
+
+        .raw-data { padding: 20px; }
+        .raw-data label { font-weight: bold; font-size: 12px; color: #888; text-transform: uppercase; }
+        pre { background: #282c34; color: #abb2bf; padding: 15px; border-radius: 8px; font-size: 13px; overflow-x: auto; margin-top: 10px; }
+
+        #console { background: #1c1c1c; color: #00ff00; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 12px; height: 150px; overflow-y: auto; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Тестер API: Auth & Revoke (VK / Yandex)</h2>
-
-    <div class="config">
-        <div>
-            <label>VK Client ID</label>
-            <input type="text" id="vk_cid" value="54421608">
-        </div>
-        <div>
-            <label>Yandex Client ID</label>
-            <input type="text" id="ya_cid" value="a3624cdac0b24aff84bbebe83cbce9a1">
-        </div>
-        <div>
-            <label>Yandex Client Secret</label>
-            <input type="password" id="ya_secret" value="7a8c08ce79db45658443307c8d3ee24f">
-        </div>
-        <div>
-            <label>Redirect URI (Web)</label>
-            <input type="text" id="r_uri" value="https://artmotika.github.io/">
-        </div>
-    </div>
+    <h2>Тестер получения данных (Frontend-to-Provider)</h2>
 
     <div class="btn-group">
-        <button class="btn-vk" onclick="start('vk', 'vkid')">Auth VK (vkid)</button>
-        <button class="btn-mail" onclick="start('vk', 'mail_ru')">Auth Mail.ru (mail_ru)</button>
-        <button class="btn-yandex" onclick="start('yandex')">Auth Yandex</button>
+        <button class="btn-vk" onclick="start('vk', 'vkid')">VK ID</button>
+        <button class="btn-mail" onclick="start('vk', 'mail_ru')">Mail.ru</button>
+        <button class="btn-yandex" onclick="start('yandex')">Яндекс</button>
     </div>
 
-    <div id="console">Готов к работе...</div>
-
-    <div id="revoke-section" class="revoke-ui">
-        <h4 style="margin: 0 0 10px 0;">Управление токеном (Logout/Revoke)</h4>
-        <p style="font-size: 11px; color: #666;">Токен активен для: <span id="active-provider-name">...</span></p>
-        <button class="btn-revoke" onclick="revoke()">Выполнить отозыв (Revoke Token)</button>
+    <div id="user-view" class="user-view">
+        <div class="user-header">
+            <img id="u-avatar" src="" alt="Avatar">
+            <div class="user-info">
+                <h3 id="u-name">Имя Фамилия</h3>
+                <p id="u-id">ID: 000000</p>
+                <p id="u-email">email@example.com</p>
+            </div>
+        </div>
+        <div class="raw-data">
+            <label>Полный ответ от провайдера (UserInfo JSON):</label>
+            <pre id="u-json"></pre>
+        </div>
     </div>
+
+    <div id="console">Ожидание авторизации...</div>
 </div>
 
 <script>
-    const logEl = document.getElementById('console');
-    const getVal = (id) => document.getElementById(id).value;
+    const CLIENT_ID_VK = "54421608";
+    const CLIENT_ID_YA = "a3624cdac0b24aff84bbebe83cbce9a1";
+    const CLIENT_SEC_YA = "7a8c08ce79db45658443307c8d3ee24f";
+    const REDIRECT_URI = window.location.origin + window.location.pathname;
 
-    function log(msg, cls = '') {
+    function log(msg) {
         const div = document.createElement('div');
-        div.className = cls;
-        div.innerText = `\n[${new Date().toLocaleTimeString()}] ${msg}`;
-        logEl.appendChild(div);
-        logEl.scrollTop = logEl.scrollHeight;
+        div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        const c = document.getElementById('console');
+        c.appendChild(div);
+        c.scrollTop = c.scrollHeight;
     }
 
-    // --- PKCE ---
-    async function generatePKCE() {
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    // --- КРИПТО (PKCE) ---
+    async function getPKCE() {
         const verifier = Array.from(crypto.getRandomValues(new Uint8Array(64)))
-            .map(b => chars[b % chars.length]).join('');
+            .map(b => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"[b % 62]).join('');
         const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
         const challenge = btoa(String.fromCharCode(...new Uint8Array(hash)))
             .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
         return { verifier, challenge };
     }
 
-    // --- ШАГ 1: buildAuthUrl ---
-    async function start(type, providerParam = '') {
-        const pkce = await generatePKCE();
+    // --- ШАГ 1: Redirect ---
+    async function start(type, provider) {
+        const pkce = await getPKCE();
         const state = Math.random().toString(36).substring(2, 15);
         const deviceId = crypto.randomUUID();
 
-        const session = { type, providerParam, verifier: pkce.verifier, deviceId, state };
-        sessionStorage.setItem('test_session', JSON.stringify(session));
+        sessionStorage.setItem('auth_session', JSON.stringify({ type, provider, verifier: pkce.verifier, state, deviceId }));
 
-        let url = "";
-        if (type === 'vk') {
-            url = `https://id.vk.com/authorize?response_type=code` +
-                  `&client_id=${getVal('vk_cid')}` +
-                  `&redirect_uri=${encodeURIComponent(getVal('r_uri'))}` +
-                  `&state=${state}` +
-                  `&code_challenge=${pkce.challenge}` +
-                  `&code_challenge_method=s256` +
-                  `&scope=phone email vkid.personal_info` +
-                  `&provider=${providerParam}`;
-        } else {
-            url = `https://oauth.yandex.ru/authorize?response_type=code` +
-                  `&client_id=${getVal('ya_cid')}` +
-                  `&redirect_uri=${encodeURIComponent(getVal('r_uri'))}` +
-                  `&state=${state}` +
-                  `&code_challenge=${pkce.challenge}` +
-                  `&code_challenge_method=S256` +
-                  `&device_id=${deviceId}`;
-        }
+        let url = type === 'vk'
+            ? `https://id.vk.com/authorize?response_type=code&client_id=${CLIENT_ID_VK}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&code_challenge=${pkce.challenge}&code_challenge_method=s256&scope=phone email vkid.personal_info&provider=${provider}`
+            : `https://oauth.yandex.ru/authorize?response_type=code&client_id=${CLIENT_ID_YA}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&code_challenge=${pkce.challenge}&code_challenge_method=S256&device_id=${deviceId}`;
 
-        log(`Инициация ${type}. Редирект...`, 'req');
-        setTimeout(() => window.location.href = url, 800);
+        log(`Перенаправление на ${type}...`);
+        window.location.href = url;
     }
 
-    // --- ШАГ 2 & 3: exchangeCode & getUserInfo ---
-    async function handleCallback() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        const state = urlParams.get('state');
-        const session = JSON.parse(sessionStorage.getItem('test_session'));
+    // --- ШАГ 2 & 3: Exchange & Render ---
+    async function checkCallback() {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        const state = params.get('state');
+        const session = JSON.parse(sessionStorage.getItem('auth_session'));
 
-        if (!code || !session) return;
-        if (state !== session.state) return log("Ошибка: state не совпадает!", "err");
+        if (!code || !session || state !== session.state) return;
 
-        log("Код получен. Обмениваем...", "req");
-
-        try {
-            let tokenData;
-            if (session.type === 'vk') {
-                const res = await fetch('https://id.vk.com/oauth2/auth', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({
-                        grant_type: 'authorization_code', code: code,
-                        code_verifier: session.verifier, client_id: getVal('vk_cid'),
-                        device_id: session.deviceId, redirect_uri: getVal('r_uri'),
-                        provider: session.providerParam
-                    })
-                });
-                tokenData = await res.json();
-            } else {
-                const res = await fetch('https://oauth.yandex.ru/token', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({
-                        grant_type: 'authorization_code', code: code,
-                        code_verifier: session.verifier, client_id: getVal('ya_cid'),
-                        client_secret: getVal('ya_secret'), device_id: session.deviceId
-                    })
-                });
-                tokenData = await res.json();
-            }
-
-            if (tokenData.access_token) {
-                log("Token получен: " + tokenData.access_token.substring(0, 15) + "...");
-                session.accessToken = tokenData.access_token;
-                sessionStorage.setItem('test_session', JSON.stringify(session));
-
-                // Показываем UI для отзыва
-                document.getElementById('revoke-section').style.display = 'block';
-                document.getElementById('active-provider-name').innerText = session.type + " (" + (session.providerParam || 'default') + ")";
-
-                log("Теперь вы можете нажать кнопку Revoke для проверки логаута.", "req");
-            }
-        } catch (e) {
-            log("Ошибка обмена: " + e.message, "err");
-        }
+        log("Код получен. Обмениваем на данные...");
         window.history.replaceState({}, document.title, window.location.pathname);
-    }
-
-    // --- НОВОЕ: revokeToken (аналог бэкенда) ---
-    async function revoke() {
-        const session = JSON.parse(sessionStorage.getItem('test_session'));
-        if (!session || !session.accessToken) return log("Нет активного токена", "err");
-
-        log(`Выполняем отзыв для ${session.type}...`, "req");
 
         try {
+            let userJson;
             if (session.type === 'vk') {
-                // Имитация StringBuilder из VkAuthProvider.revokeToken
-                const url = "https://id.vk.ru/oauth2/logout";
-                const body = new URLSearchParams();
-                body.append("client_id", getVal('vk_cid'));
-                body.append("access_token", session.accessToken);
-                body.append("provider", session.providerParam || "vkid");
-
-                log(`POST ${url}`);
-                log(`Body: ${body.toString()}`);
-
-                // Запрос (может упасть по CORS, но логика верна)
-                await fetch(url, {
+                // Обмен VK (имитация бэкенда)
+                const tokenRes = await fetch('https://id.vk.com/oauth2/auth', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: body
+                    body: new URLSearchParams({
+                        grant_type: 'authorization_code', code, code_verifier: session.verifier,
+                        client_id: CLIENT_ID_VK, device_id: session.deviceId, redirect_uri: REDIRECT_URI, provider: session.provider
+                    })
                 });
+                const tokenData = await tokenRes.json();
+
+                // Получение инфо VK
+                const infoRes = await fetch('https://id.vk.com/oauth2/user_info', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ access_token: tokenData.access_token, client_id: CLIENT_ID_VK })
+                });
+                userJson = await infoRes.json();
+                renderVK(userJson);
             } else {
-                // Имитация StringBuilder из YandexAuthProvider.revokeToken
-                const url = "https://oauth.yandex.ru/revoke_token";
-                const body = new URLSearchParams();
-                body.append("access_token", session.accessToken);
-                body.append("client_id", getVal('ya_cid'));
-                body.append("client_secret", getVal('ya_secret'));
-
-                log(`POST ${url}`);
-                log(`Body: ${body.toString()}`);
-
-                await fetch(url, {
+                // Обмен Яндекс
+                const tokenRes = await fetch('https://oauth.yandex.ru/token', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: body
+                    body: new URLSearchParams({
+                        grant_type: 'authorization_code', code, code_verifier: session.verifier,
+                        client_id: CLIENT_ID_YA, client_secret: CLIENT_SEC_YA, device_id: session.deviceId
+                    })
                 });
+                const tokenData = await tokenRes.json();
+
+                // Получение инфо Яндекс
+                const infoRes = await fetch('https://login.yandex.ru/info?format=json', {
+                    headers: { 'Authorization': `OAuth ${tokenData.access_token}` }
+                });
+                userJson = await infoRes.json();
+                renderYandex(userJson);
             }
-            log("Запрос на отзыв отправлен провайдеру.", "info");
         } catch (e) {
-            log("Запрос выполнен. (Если ошибка CORS - это нормально для браузера, на бэкенде сработает)", "err");
+            log("Ошибка CORS или Сети. Это подтверждает, что обмен должен делать Java-бэкенд!");
         }
     }
 
-    window.onload = handleCallback;
+    function renderVK(data) {
+        const u = data.user;
+        document.getElementById('user-view').style.display = 'block';
+        document.getElementById('u-avatar').src = u.avatar;
+        document.getElementById('u-name').innerText = `${u.first_name} ${u.last_name}`;
+        document.getElementById('u-id').innerText = `VK ID: ${u.user_id}`;
+        document.getElementById('u-email').innerText = u.email || "Email не предоставлен";
+        document.getElementById('u-json').innerText = JSON.stringify(data, null, 2);
+        log("Данные VK отображены.");
+    }
+
+    function renderYandex(u) {
+        document.getElementById('user-view').style.display = 'block';
+        document.getElementById('u-avatar').src = `https://avatars.yandex.net/get-yapic/${u.default_avatar_id}/islands-200`;
+        document.getElementById('u-name').innerText = u.real_name || u.display_name;
+        document.getElementById('u-id').innerText = `Yandex ID: ${u.id}`;
+        document.getElementById('u-email').innerText = u.default_email || "Email не указан";
+        document.getElementById('u-json').innerText = JSON.stringify(u, null, 2);
+        log("Данные Яндекс отображены.");
+    }
+
+    window.onload = checkCallback;
 </script>
 
 </body>
